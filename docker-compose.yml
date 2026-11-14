@@ -1,0 +1,46 @@
+name: talent-atlas
+
+# Default: only the app, talking to an existing ArcadeDB (prod: the shared server on clinodb).
+# Local work: `docker compose --profile local-db up -d --build` also starts ArcadeDB
+# at the same version as prod, and the app points at it via ARCADEDB_URL=http://arcadedb:2480.
+
+services:
+  app:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      ARCADEDB_URL: "${ARCADEDB_URL:-http://arcadedb:2480}"
+      ARCADEDB_DATABASE: "${ARCADEDB_DATABASE:-talent_atlas}"
+      ARCADEDB_USER: "${ARCADEDB_USER:-root}"
+      ARCADEDB_PASSWORD: "${ARCADEDB_PASSWORD:?set ARCADEDB_PASSWORD in .env}"
+      SESSION_SECRET: "${SESSION_SECRET:?set SESSION_SECRET in .env}"
+      ADMIN_USERNAME: "${ADMIN_USERNAME:-}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-}"
+      COOKIE_SECURE: "${COOKIE_SECURE:-false}"
+      PORT: "8080"
+      TZ: "${TZ:-Asia/Jakarta}"
+    ports:
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1:8080/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    mem_limit: 256m
+
+  arcadedb:
+    profiles: [local-db]
+    image: arcadedata/arcadedb:26.7.2
+    restart: unless-stopped
+    environment:
+      ARCADEDB_OPTS_MEMORY: "-Xms512m -Xmx512m"
+      JAVA_OPTS: "-Darcadedb.server.rootPassword=${ARCADEDB_PASSWORD:?set ARCADEDB_PASSWORD in .env}"
+    volumes:
+      - arcadedb-data:/home/arcadedb/databases
+    ports:
+      # ArcadeDB Studio, reachable from this machine only.
+      - "127.0.0.1:2480:2480"
+
+volumes:
+  arcadedb-data:
