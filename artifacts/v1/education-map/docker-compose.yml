@@ -1,0 +1,35 @@
+name: education-map
+
+services:
+  arcadedb:
+    image: arcadedata/arcadedb:26.10.2
+    restart: unless-stopped
+    environment:
+      ARCADEDB_SETTINGS: "-Darcadedb.server.rootPassword=${ARCADEDB_ROOT_PASSWORD:?set ARCADEDB_ROOT_PASSWORD in .env}"
+    volumes:
+      - arcadedb-data:/home/arcadedb/databases
+      - arcadedb-backups:/home/arcadedb/backups
+    ports:
+      # ArcadeDB Studio, reachable from this machine only.
+      - "127.0.0.1:2480:2480"
+
+  app:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      - arcadedb
+    environment:
+      ARCADEDB_URL: http://arcadedb:2480
+      ARCADEDB_DATABASE: education
+      ARCADEDB_USER: root
+      ARCADEDB_PASSWORD: "${ARCADEDB_ROOT_PASSWORD}"
+      SESSION_SECRET: "${SESSION_SECRET:?set SESSION_SECRET in .env}"
+      COOKIE_SECURE: "${COOKIE_SECURE:-false}"
+      PORT: "8080"
+      TZ: "${TZ:-Asia/Jakarta}"
+    ports:
+      - "${APP_PORT:-8080}:8080"
+
+volumes:
+  arcadedb-data:
+  arcadedb-backups:
