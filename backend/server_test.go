@@ -235,9 +235,9 @@ func TestMigrateIsIdempotent(t *testing.T) {
 	if err := Seed(context.Background(), again); err != nil {
 		t.Fatal(err)
 	}
-	// prepare table + one "already applied?" check per migration and the seed
-	if extra := len(fake.commands) - n; extra != 4 {
-		t.Fatalf("second run sent %d commands, want 4", extra)
+	// prepare table + one "already applied?" check per migration and per seed
+	if extra := len(fake.commands) - n; extra != 5 {
+		t.Fatalf("second run sent %d commands, want 5", extra)
 	}
 }
 
@@ -271,7 +271,7 @@ func TestStatementsAndRules(t *testing.T) {
 	}
 	// Grade 8 means stages A, B, C are done and D is active: four ENROLLED_IN writes.
 	if got := strings.Count(joined, "ENROLLED_IN"); got != 4 {
-		t.Errorf("ENROLLED_IN writes: %d, want 4", got)
+		t.Errorf("ENROLLED_IN writes: %d, want 5", got)
 	}
 	// Enjoyment is written only when it was answered.
 	if got := strings.Count(joined, "m.enjoyment"); got != 1 {

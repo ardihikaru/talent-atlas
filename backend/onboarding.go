@@ -64,6 +64,28 @@ var (
 	slugRe      = regexp.MustCompile(`[^a-z0-9]+`)
 )
 
+// sportCatalog and methodCatalog map seeded display names to their catalog ids, so
+// "Renang" from the wizard lands on the seeded Sport "swimming" instead of a copy.
+var (
+	sportCatalog  = map[string]string{}
+	methodCatalog = map[string]string{"sempoa": "abacus", "abacus": "abacus"}
+)
+
+func init() {
+	for _, s := range sportSeeds {
+		sportCatalog[strings.ToLower(s.Name)] = s.ID
+		sportCatalog[s.ID] = s.ID
+	}
+}
+
+// catalogID returns the seeded id for a name, or its slug for an entry the catalog lacks.
+func catalogID(name string, catalog map[string]string) string {
+	if id, ok := catalog[strings.ToLower(strings.TrimSpace(name))]; ok {
+		return id
+	}
+	return Slug(name)
+}
+
 // Slug turns a display name into a stable id fragment.
 func Slug(name string) string {
 	s := strings.Trim(slugRe.ReplaceAllString(strings.ToLower(strings.TrimSpace(name)), "_"), "_")
@@ -256,7 +278,7 @@ MERGE (c)-[r:INTERESTED_IN]->(i) SET r.score = $score, r.asOf = $today, r.source
 	}
 
 	for _, s := range in.Sports {
-		id := Slug(s.Name) // seeded sports use the bare slug: badminton, swimming, ...
+		id := catalogID(s.Name, sportCatalog)
 		add("MERGE (s:Sport {id: $id}) ON CREATE SET s.name = $name, s.custom = true",
 			map[string]any{"id": id, "name": strings.TrimSpace(s.Name)})
 		params := map[string]any{"childId": childID, "id": id, "level": s.Level, "hoursPerWeek": s.HoursPerWeek, "today": day}
@@ -270,7 +292,7 @@ MERGE (c)-[r:PRACTICES]->(s) SET r.level = $level, r.hoursPerWeek = $hoursPerWee
 	}
 
 	for _, m := range in.Methods {
-		id := Slug(m)
+		id := catalogID(m, methodCatalog)
 		add("MERGE (m:Method {id: $id}) ON CREATE SET m.name = $name, m.custom = true",
 			map[string]any{"id": id, "name": strings.TrimSpace(m)})
 		add("MATCH (c:Child {id: $childId}), (m:Method {id: $id}) MERGE (c)-[:LEARNS_WITH]->(m)",

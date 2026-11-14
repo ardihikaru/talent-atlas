@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Peta Pendidikan</title>
+<title>Talent Atlas</title>
 <style>
 :root{--bg:#f2f4f3;--surface:#fff;--band:#e9edeb;--ink:#17232b;--muted:#5d6b73;--line:#d3dad7;--accent:#d9482b;--ease-out:cubic-bezier(0.23,1,0.32,1)}
 @media (prefers-color-scheme:dark){:root{color-scheme:dark;--bg:#11161a;--surface:#1a2127;--band:#161c21;--ink:#e7edf0;--muted:#94a2ab;--line:#2d383f;--accent:#ff7a55}}
@@ -30,8 +30,8 @@ li{font:500 12px ui-monospace,Menlo,Consolas,monospace;padding:4px 8px;border-ra
 </head>
 <body>
 <main>
-  <h1>Peta Pendidikan</h1>
-  <p>Onboarding selesai dan graf awal sudah tersimpan di ArcadeDB. Halaman ini adalah titik awal: tampilan graf, input berkala, dan saran AI dibangun di atasnya.</p>
+  <h1>Talent Atlas</h1>
+  <p>Peta perjalanan pendidikan, lomba, dan olahraga anak dari SD sampai kuliah. Buka peta untuk melihat di mana bakatnya terlihat dan langkah berikutnya.</p>
   <div id="app" class="card"><p>Memuat…</p></div>
   <div class="row"><a class="btn plain" href="/onboarding?add">Tambah anak</a><button class="btn plain" id="out" type="button" hidden>Keluar</button></div>
 </main>
@@ -60,7 +60,7 @@ async function load(){
     if(!data.children.length){app.innerHTML='<p>Belum ada anak pada akun ini.</p>';return}
     const blocks=await Promise.all(data.children.map(async c=>{
       let rel=[];try{rel=(await api('GET','/api/children/'+encodeURIComponent(c.id)+'/summary')).relations}catch(e){}
-      return '<h2>'+esc(c.nickname)+'</h2><p>'+esc(LEVEL[c.level]||c.level)+(c.grade?' kelas '+esc(c.grade):'')+' · lahir '+esc(c.birthDate)+'</p>'
+      return '<h2>'+esc(c.nickname)+'</h2><a class="btn" href="/graph?child='+encodeURIComponent(c.id)+'">Buka peta bakat</a><p>'+esc(LEVEL[c.level]||c.level)+(c.grade?' kelas '+esc(c.grade):'')+' · lahir '+esc(c.birthDate)+'</p>'
         +'<ul>'+rel.map(r=>'<li>'+esc(r.relation)+' ×'+esc(r.n)+'</li>').join('')+'</ul>'}));
     app.innerHTML=blocks.join('<hr style="border:0;border-top:1px solid var(--line);width:100%">');
   }catch(e){if(e.status===401)loginForm();else app.innerHTML='<p class="err">'+esc(e.message)+'</p>'}}

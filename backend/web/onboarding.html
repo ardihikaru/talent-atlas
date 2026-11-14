@@ -527,7 +527,7 @@ async function next(instant,skipping){
       if(serverState!=='needs_owner'){const d=await api('GET','/api/onboarding/draft');restore(d.draft)}
       serverState='needs_child';index=0;maxSeen=Math.max(maxSeen,0);show(instant,1);return}
     if(s.id==='review'){
-      if(live){busy=true;$('#next').disabled=true;await api('POST','/api/onboarding/complete',payload());location.href='/';return}
+      if(live){busy=true;$('#next').disabled=true;const r=await api('POST','/api/onboarding/complete',payload());location.href='/graph'+(r&&r.childId?'?child='+encodeURIComponent(r.childId):'');return}
       done=true;try{localStorage.removeItem(STORE)}catch(e){}show(instant,1);return}
     goTo(index+1,instant);
   }catch(e){errEl.textContent=e.message}finally{busy=false;$('#next').disabled=false}}
