@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Peta Pendidikan</title>
+<style>
+:root{--bg:#f2f4f3;--surface:#fff;--band:#e9edeb;--ink:#17232b;--muted:#5d6b73;--line:#d3dad7;--accent:#d9482b;--ease-out:cubic-bezier(0.23,1,0.32,1)}
+@media (prefers-color-scheme:dark){:root{color-scheme:dark;--bg:#11161a;--surface:#1a2127;--band:#161c21;--ink:#e7edf0;--muted:#94a2ab;--line:#2d383f;--accent:#ff7a55}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:760px;margin:0 auto;padding:32px 20px 64px;display:flex;flex-direction:column;gap:20px}
+h1{font-size:30px;line-height:1.1;letter-spacing:-.02em;margin:0}
+h2{font-size:18px;margin:0}
+p{margin:0;color:var(--muted)}
+.card{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:18px;display:flex;flex-direction:column;gap:10px}
+.btn{align-self:flex-start;border:1px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:9px;padding:9px 15px;font:inherit;font-weight:600;cursor:pointer;text-decoration:none;transition:transform 160ms var(--ease-out)}
+.btn:active{transform:scale(.97)}
+.btn.plain{background:var(--surface);color:var(--ink);border-color:var(--line)}
+input{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--bg);font:inherit;color:inherit}
+label{font-size:12.5px;font-weight:600;color:var(--muted)}
+form{display:flex;flex-direction:column;gap:10px;max-width:340px}
+ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+li{font:500 12px ui-monospace,Menlo,Consolas,monospace;padding:4px 8px;border-radius:7px;background:var(--band)}
+.err{color:var(--accent);font-weight:600;font-size:13.5px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.btn:active{transform:none}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Peta Pendidikan</h1>
+  <p>Onboarding selesai dan graf awal sudah tersimpan di ArcadeDB. Halaman ini adalah titik awal: tampilan graf, input berkala, dan saran AI dibangun di atasnya.</p>
+  <div id="app" class="card"><p>Memuat…</p></div>
+  <div class="row"><a class="btn plain" href="/onboarding?add">Tambah anak</a><button class="btn plain" id="out" type="button" hidden>Keluar</button></div>
+</main>
+<script>
+(function(){
+'use strict';
+const app=document.getElementById('app'),out=document.getElementById('out');
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const LEVEL={preschool:'belum sekolah',primary:'SD',junior:'SMP',senior:'SMA',university:'kuliah'};
+async function api(method,path,body){
+  const res=await fetch(path,{method,headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined});
+  let data={};try{data=await res.json()}catch(e){}
+  if(!res.ok){const err=new Error(data.error||('Server menjawab '+res.status));err.status=res.status;throw err}
+  return data}
+function loginForm(message){
+  out.hidden=true;
+  app.innerHTML='<h2>Masuk</h2><form id="f"><div><label for="e">Nama pengguna</label><input id="e" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required></div>'
+    +'<div><label for="p">Kata sandi</label><input id="p" type="password" autocomplete="current-password" required></div>'
+    +'<div class="err" role="alert">'+esc(message||'')+'</div><button class="btn" type="submit">Masuk</button></form>';
+  document.getElementById('f').addEventListener('submit',async ev=>{ev.preventDefault();
+    try{await api('POST','/api/login',{username:document.getElementById('e').value.trim(),password:document.getElementById('p').value});load()}
+    catch(e){loginForm(e.status===401?'Nama pengguna atau kata sandi salah.':e.message)}})}
+async function load(){
+  try{
+    const data=await api('GET','/api/children');out.hidden=false;
+    if(!data.children.length){app.innerHTML='<p>Belum ada anak pada akun ini.</p>';return}
+    const blocks=await Promise.all(data.children.map(async c=>{
+      let rel=[];try{rel=(await api('GET','/api/children/'+encodeURIComponent(c.id)+'/summary')).relations}catch(e){}
+      return '<h2>'+esc(c.nickname)+'</h2><p>'+esc(LEVEL[c.level]||c.level)+(c.grade?' kelas '+esc(c.grade):'')+' · lahir '+esc(c.birthDate)+'</p>'
+        +'<ul>'+rel.map(r=>'<li>'+esc(r.relation)+' ×'+esc(r.n)+'</li>').join('')+'</ul>'}));
+    app.innerHTML=blocks.join('<hr style="border:0;border-top:1px solid var(--line);width:100%">');
+  }catch(e){if(e.status===401)loginForm();else app.innerHTML='<p class="err">'+esc(e.message)+'</p>'}}
+out.addEventListener('click',async()=>{try{await api('POST','/api/logout')}catch(e){}loginForm()});
+load();
+})();
+</script>
+</body>
+</html>
