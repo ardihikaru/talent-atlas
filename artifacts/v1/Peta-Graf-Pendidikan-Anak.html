@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Peta Graf Pendidikan Anak</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: one time-ordered graph (kolom = fase, baris = jenis node) on top,
+   the two things the parent operates (input, saran) under it, reference below. */
+:root{
+  --bg:#f2f4f3; --surface:#ffffff; --band:#e9edeb; --ink:#17232b; --muted:#5d6b73; --line:#d3dad7;
+  --accent:#d9482b;
+  --c-blue:#2460a7; --c-plum:#96397a; --c-amber:#946400; --c-green:#1c7548; --c-violet:#5b43c4; --c-teal:#0b767b;
+  --shadow:0 1px 2px rgba(23,35,43,.06),0 12px 32px -8px rgba(23,35,43,.22);
+  --f-display:"Bricolage Grotesque","Instrument Sans",system-ui,sans-serif;
+  --f-body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+  --ease-in-out:cubic-bezier(0.77,0,0.175,1);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#11161a; --surface:#1a2127; --band:#161c21; --ink:#e7edf0; --muted:#94a2ab; --line:#2d383f;
+    --accent:#ff7a55;
+    --c-blue:#74abea; --c-plum:#dc8ec2; --c-amber:#e2b455; --c-green:#63c796; --c-violet:#a898f2; --c-teal:#52c4c8;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 14px 36px -8px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#11161a; --surface:#1a2127; --band:#161c21; --ink:#e7edf0; --muted:#94a2ab; --line:#2d383f;
+  --accent:#ff7a55;
+  --c-blue:#74abea; --c-plum:#dc8ec2; --c-amber:#e2b455; --c-green:#63c796; --c-violet:#a898f2; --c-teal:#52c4c8;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 14px 36px -8px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.55 var(--f-body)}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.page{max-width:1480px;margin:0 auto;padding:28px 24px 72px;display:flex;flex-direction:column;gap:28px}
+@media (max-width:520px){.page{padding:20px 16px 56px}}
+
+h1{font:700 clamp(28px,4vw,40px)/1.08 var(--f-display);letter-spacing:-.02em;margin:0;text-wrap:balance}
+h2{font:700 22px/1.2 var(--f-display);letter-spacing:-.015em;margin:0;text-wrap:balance}
+h3{font:600 15px/1.3 var(--f-body);margin:0}
+p{margin:0}
+.lead{max-width:65ch;color:var(--muted);font-size:16px}
+.top{display:flex;flex-direction:column;gap:10px}
+.chip{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;padding:5px 11px;border:1px solid var(--line);border-radius:999px;background:var(--surface);font-size:13px}
+.chip i{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
+
+/* ---------- buttons ---------- */
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:8px 13px;font-weight:600;font-size:13.5px;cursor:pointer;transition:transform 160ms var(--ease-out),background-color 150ms ease,border-color 150ms ease}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.small{padding:4px 9px;font-size:12px;border-radius:7px}
+@media (hover:hover) and (pointer:fine){
+  .btn:hover{border-color:var(--muted)}
+  .btn.primary:hover{background:color-mix(in oklab,var(--ink) 86%,var(--bg))}
+}
+
+/* ---------- stepper ---------- */
+.viz{display:flex;flex-direction:column;gap:14px}
+.stepbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.steps{position:relative;display:grid;grid-template-columns:repeat(6,1fr);flex:1 1 520px;max-width:760px;padding:3px;border-radius:11px;background:var(--band);border:1px solid var(--line)}
+.steps .ind{position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px)/6);border-radius:8px;background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.12);transform:translateX(calc(var(--i,5)*100%));transition:transform 260ms var(--ease-in-out)}
+.steps.instant .ind{transition:none}
+.steps button{position:relative;border:0;background:none;padding:8px 4px;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px;color:var(--muted);transition:color 150ms ease;white-space:nowrap}
+.steps button[aria-current="step"]{color:var(--ink)}
+.steps button b{font:500 11px var(--f-mono);margin-right:5px;opacity:.75}
+@media (max-width:640px){.steps button span{display:none}.steps button b{margin:0;font-size:13px}}
+.caption{display:flex;flex-direction:column;gap:6px;max-width:74ch;min-height:104px;transition:opacity 200ms ease,filter 200ms ease}
+.caption.sw{opacity:.35;filter:blur(2px)}
+.caption.instant{transition:none}
+.caption p{color:var(--muted)}
+code,pre{font-family:var(--f-mono);font-size:12.5px}
+.pat{align-self:flex-start;padding:3px 8px;border-radius:6px;background:var(--band);border:1px solid var(--line);overflow-wrap:anywhere}
+
+/* ---------- graph stage ---------- */
+.scroller{overflow-x:auto;border:1px solid var(--line);border-radius:16px;background:var(--bg)}
+.fit{position:relative}
+.stage{position:absolute;left:0;top:0;width:1432px;transform-origin:0 0}
+.band{position:absolute;top:8px;bottom:8px;border-radius:12px;background:var(--band)}
+.band b{position:absolute;left:12px;top:9px;font:600 11px/1.2 var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.band b em{font-style:normal;letter-spacing:0;text-transform:none;font-weight:500;margin-left:6px}
+.band .now{position:absolute;left:12px;top:30px;padding:2px 7px;border-radius:999px;background:var(--accent);color:#fff;font:600 10.5px/1.4 var(--f-body);white-space:nowrap}
+.lane{position:absolute;left:32px;font:600 10.5px/1 var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);opacity:0;transition:opacity 240ms ease;white-space:nowrap}
+.lane.on{opacity:1}
+svg.edges{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+.e{color:var(--ink);opacity:0;transition:opacity 220ms ease}
+.e path.ln{fill:none;stroke:currentColor;stroke-width:1.4}
+.e.pl path.ln{stroke-dasharray:4 4}
+.e path.ah{fill:currentColor}
+.e text{font:500 9.5px var(--f-mono);fill:currentColor;text-anchor:middle;paint-order:stroke;stroke:var(--bg);stroke-width:5px;stroke-linejoin:round;opacity:0;transition:opacity 150ms ease}
+.e.on{opacity:.5}
+.e.on.hl{opacity:1}
+.e.on.hl path.ln{stroke-width:2}
+.e.on.hl text{opacity:1}
+.e.on.dim{opacity:.1}
+.e.k-blue{color:var(--c-blue)} .e.k-plum{color:var(--c-plum)} .e.k-amber{color:var(--c-amber)} .e.k-green{color:var(--c-green)}
+
+.nw{position:absolute;height:0;display:flex;align-items:center}
+.n{position:relative;width:100%;flex-shrink:0;text-align:left;padding:6px 9px 10px 12px;border:1px solid var(--line);border-radius:9px;background:var(--surface);cursor:pointer;font:600 12px/1.25 var(--f-body);text-wrap:balance;opacity:0;transform:translateY(8px);pointer-events:none;
+  transition:opacity 240ms var(--ease-out),transform 200ms var(--ease-out),border-color 150ms ease,box-shadow 150ms ease}
+.n.on{opacity:1;transform:none;pointer-events:auto}
+.n.on:active{transform:scale(.97)}
+.n.on.dim{opacity:.22}
+.n small{display:block;font-weight:500;font-size:10.5px;line-height:1.3;color:var(--muted);margin-top:1px}
+.n::before{content:"";position:absolute;left:4px;top:7px;bottom:7px;width:3px;border-radius:2px;background:var(--c,transparent)}
+.n.sel{border-color:var(--c,var(--ink));box-shadow:0 0 0 2px var(--c,var(--ink))}
+.t-comp,.t-method{--c:var(--c-blue)} .t-interest,.t-activity,.t-contest{--c:var(--c-plum)} .t-sport{--c:var(--c-teal)} .t-school{--c:var(--ink);padding-bottom:7px} .t-obs{--c:var(--c-amber)} .t-major,.t-career{--c:var(--c-green)}
+.t-interest,.t-method{border-radius:22px;padding-left:16px}
+.t-interest::before,.t-method::before{left:7px;top:11px;bottom:11px}
+.t-obs{background:color-mix(in oklab,var(--c-amber) 11%,var(--surface))}
+.t-major{border-color:var(--c-green);border-width:1.5px}
+.t-career{background:var(--c-green);border-color:var(--c-green);color:var(--bg)}
+.t-career small{color:color-mix(in oklab,var(--bg) 78%,var(--c-green))}
+.t-career::before{display:none}
+.t-stage{background:var(--ink);border-color:var(--ink);color:var(--bg);padding-bottom:7px}
+.t-stage small{color:color-mix(in oklab,var(--bg) 72%,var(--ink))}
+.t-stage.s-active{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 0 4px color-mix(in oklab,var(--accent) 24%,transparent)}
+.t-stage.s-active small{color:rgba(255,255,255,.85)}
+.s-planned{border-style:dashed;border-color:var(--muted);background:var(--bg);color:var(--muted)}
+.t-stage.s-planned{background:var(--bg);color:var(--ink)} .t-stage.s-planned small{color:var(--muted)}
+.t-major.s-planned{border-style:solid;border-color:var(--c-green);background:var(--surface);color:var(--ink)}
+@media (hover:hover) and (pointer:fine){ .n.on:hover{border-color:var(--c,var(--muted))} .t-stage.on:hover{border-color:var(--accent)} }
+.lv{position:absolute;left:12px;right:9px;bottom:4px;display:flex;gap:2px;transition:opacity 240ms ease}
+.lv i{flex:1;height:3px;border-radius:2px;background:var(--line);transition:background-color 300ms ease}
+.lv i.f{background:var(--c)}
+.stage:not(.s3) .lv{opacity:0}
+.ai{position:absolute;right:-6px;top:-7px;width:16px;height:16px;border-radius:50%;background:var(--c-violet);color:#fff;font:700 9px/16px var(--f-body);text-align:center;box-shadow:0 0 0 2px var(--bg);opacity:0;transform:scale(.9);transition:opacity 200ms var(--ease-out),transform 200ms var(--ease-out)}
+.stage.s6 .n.has-ai .ai{opacity:1;transform:none}
+
+/* popover (origin-aware: grows from the node it belongs to) */
+.pop{position:absolute;z-index:5;width:272px;padding:12px 12px 10px;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:var(--shadow);font-size:12.5px;
+  opacity:0;transform:scale(.96);visibility:hidden;transition:opacity 120ms var(--ease-out),transform 120ms var(--ease-out),visibility 0s 120ms}
+.pop.open{opacity:1;transform:none;visibility:visible;transition:opacity 180ms var(--ease-out),transform 180ms var(--ease-out),visibility 0s}
+.pop.instant{transition:none}
+.pop-h{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.tag{font:500 11px var(--f-mono);padding:2px 6px;border-radius:5px;background:color-mix(in oklab,var(--c,var(--ink)) 14%,var(--surface));color:var(--c,var(--ink))}
+.x{border:0;background:none;width:24px;height:24px;border-radius:6px;cursor:pointer;color:var(--muted);font-size:16px;line-height:1;transition:transform 160ms var(--ease-out),background-color 150ms ease}
+.x:active{transform:scale(.94)}
+@media (hover:hover) and (pointer:fine){.x:hover{background:var(--band)}}
+.pop dl{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:8px 0}
+.pop dt{color:var(--muted)} .pop dd{margin:0;overflow-wrap:anywhere}
+.pop h4{font:600 10.5px/1 var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:10px 0 5px}
+.pop ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px}
+.pop li{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+.pop li code{font-size:10.5px;color:var(--muted)}
+.go{border:0;background:none;padding:0;cursor:pointer;font-weight:600;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px;text-align:left}
+.pop pre{margin:10px 0 6px}
+pre{margin:0;padding:10px 12px;border-radius:9px;background:var(--band);border:1px solid var(--line);overflow-x:auto;line-height:1.55;white-space:pre}
+
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12.5px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:3px;background:var(--c);flex-shrink:0}
+.legend i.dash{background:none;border:1.5px dashed var(--muted)}
+.legend i.bar{width:18px;height:3px;border-radius:2px;background:linear-gradient(90deg,var(--c-blue) 50%,var(--line) 50%)}
+.legend i.dot{border-radius:50%;background:var(--c-violet)}
+.note{font-size:13px;color:var(--muted);max-width:80ch}
+
+/* ---------- work panels ---------- */
+.work{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:20px;align-items:start}
+.panel{border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.panel > p{color:var(--muted);font-size:14px}
+form{display:flex;flex-direction:column;gap:12px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.fld{display:flex;flex-direction:column;gap:5px;min-width:0}
+.fld > label,legend{font-size:12.5px;font-weight:600;color:var(--muted);padding:0}
+select,input[type=text],input[type=number]{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--bg)}
+fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:5px;min-width:0}
+.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label{display:block;text-align:center;padding:7px 4px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font:600 13px var(--f-mono);cursor:pointer;transition:transform 160ms var(--ease-out),background-color 150ms ease,color 150ms ease,border-color 150ms ease}
+.seg label:active{transform:scale(.97)}
+.seg input:checked + label{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.seg input:focus-visible + label{outline:2px solid var(--accent);outline-offset:2px}
+.hint{font-size:12.5px;color:var(--muted)}
+.codehead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.codehead span{font-size:12.5px;font-weight:600;color:var(--muted)}
+
+.majorRows{display:flex;flex-direction:column;gap:12px}
+.major-row{display:grid;grid-template-columns:minmax(0,1fr);gap:5px}
+.major-row strong{font-size:14px}
+.meter{display:grid;grid-template-columns:118px 1fr 42px;gap:10px;align-items:center;font-size:12.5px;color:var(--muted)}
+.meter b{font:500 12.5px var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink);text-align:right}
+.track{height:6px;border-radius:3px;background:var(--band);overflow:hidden}
+.track i{display:block;height:100%;border-radius:3px;background:var(--c-green);transform-origin:0 50%;transform:scaleX(var(--v,0));transition:transform 420ms var(--ease-in-out)}
+.track i.m{background:var(--c-plum)}
+.track i.k{background:var(--c-violet)}
+.major-row.bk{cursor:pointer;border-radius:8px}
+.seg.seg5{grid-template-columns:repeat(5,1fr)}
+.spark{display:block;background:var(--band);border-radius:6px}
+.spark polyline{fill:none;stroke:var(--c,var(--ink));stroke-width:1.5}
+.spark circle{fill:var(--c,var(--ink))}
+.spark-l{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;margin-top:2px}
+.track i.over{background:var(--accent)}
+.panel table{min-width:0}
+.panel td,.panel th{padding:6px 10px}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cal{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.cal li{display:grid;grid-template-columns:56px minmax(0,1fr);gap:12px;align-items:center;border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:9px 12px}
+.cal .d{display:flex;flex-direction:column;align-items:center;border-right:1px solid var(--line);padding-right:12px;font:500 11px var(--f-mono);color:var(--muted)}
+.cal .d b{font:700 20px/1.1 var(--f-display);color:var(--ink)}
+.cal strong{font-size:14px;display:block}
+.cal small{font-size:12.5px;color:var(--muted)}
+.wts{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+input[type=range]{width:100%;accent-color:var(--ink);margin:0}
+.panel h3{margin-top:4px}
+.sg-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.sr{width:100%;text-align:left;border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:12px 13px;cursor:pointer;display:flex;flex-direction:column;gap:6px;transition:transform 160ms var(--ease-out),border-color 150ms ease,opacity 300ms var(--ease-out)}
+.sr:active{transform:scale(.985)}
+@starting-style{.sr{opacity:0}}
+@media (hover:hover) and (pointer:fine){.sr:hover{border-color:var(--c-violet)}}
+.sr-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pr{font:600 10.5px/1 var(--f-body);letter-spacing:.06em;text-transform:uppercase;padding:4px 7px;border-radius:5px;border:1.5px solid var(--ink);flex-shrink:0}
+.pr.p1{background:var(--ink);color:var(--bg)}
+.pr.p3{border-style:dotted;color:var(--muted);border-color:var(--muted)}
+.sr strong{font-size:14.5px}
+.sr p{font-size:13.5px;color:var(--muted)}
+.path{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;font-size:12px}
+.path span{padding:2px 7px;border-radius:5px;background:var(--surface);border:1px solid var(--line)}
+.path em{font-style:normal;color:var(--muted)}
+.sr small{font-size:12px;color:var(--muted)}
+.empty{padding:14px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);font-size:14px}
+
+/* ---------- reference ---------- */
+.ref{display:flex;flex-direction:column;gap:14px}
+.ref > p{max-width:65ch;color:var(--muted)}
+.tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:13.5px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;font-weight:600;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{font-size:12px;white-space:nowrap}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:16px;align-items:start}
+.pipe{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;counter-reset:p}
+.pipe li{counter-increment:p;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:12px 14px;display:flex;flex-direction:column;gap:4px;font-size:13.5px;color:var(--muted)}
+.pipe li::before{content:counter(p);font:500 12px var(--f-mono);color:var(--c-violet)}
+.pipe h3{color:var(--ink);font-size:14.5px}
+.ladder{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;counter-reset:l}
+.ladder li{counter-increment:l;position:relative;border:1px solid var(--line);border-left:3px solid var(--c-plum);border-radius:10px;background:var(--surface);padding:10px 12px;display:flex;flex-direction:column;gap:2px;font-size:13px;color:var(--muted)}
+.ladder b{color:var(--ink);font-size:14.5px}
+.ladder b::before{content:counter(l) " ";font:500 12px var(--f-mono);color:var(--c-plum);margin-right:4px}
+.archive{display:flex;flex-direction:column;gap:8px}
+.archive-h{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:space-between;align-items:center}
+.archive-h .hint{font-weight:400}
+.years{display:flex;gap:6px}
+.years .btn[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+#archiveBody{transition:opacity 200ms ease,filter 200ms ease}
+#archiveBody.sw{opacity:.4;filter:blur(2px)}
+.q{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.q p{font-size:13.5px;color:var(--muted)}
+.build{margin:0;padding-left:22px;max-width:70ch;display:flex;flex-direction:column;gap:6px}
+.build li::marker{font:500 13px var(--f-mono);color:var(--muted)}
+
+.toast{position:fixed;left:16px;right:16px;bottom:20px;margin:0 auto;width:fit-content;max-width:calc(100% - 32px);z-index:20;display:flex;gap:12px;align-items:center;padding:10px 12px 10px 14px;border-radius:12px;background:var(--ink);color:var(--bg);font-size:13.5px;box-shadow:var(--shadow);
+  opacity:0;transform:translateY(calc(100% + 24px));visibility:hidden;transition:opacity 400ms ease,transform 400ms ease,visibility 0s 400ms}
+.toast.show{opacity:1;transform:none;visibility:visible;transition:opacity 400ms ease,transform 400ms ease,visibility 0s}
+.toast .btn{background:transparent;color:var(--bg);border-color:color-mix(in oklab,var(--bg) 40%,transparent)}
+
+@media (prefers-reduced-motion:reduce){
+  .n,.n.on:active,.btn:active,.x:active,.sr:active,.seg label:active{transform:none}
+  .n.on{transform:none}
+  .steps .ind,.track i{transition:none}
+  .pop,.ai{transform:none}
+  .toast{transform:none}
+  .caption.sw{filter:none}
+}
+</style>
+</head>
+<body>
+<main class="page">
+
+  <header class="top">
+    <h1>Peta Graf Pendidikan Anak</h1>
+    <p class="lead">Satu graf yang memuat perjalanan anak dari SD kelas 1 sampai kuliah: sekolah dan kurikulumnya, apa yang sudah dikuasai, minat, lomba, dan olahraganya, lalu di mana bakatnya terlihat dan bagian jalur mana yang masih berlubang.</p>
+    <span class="chip"><i></i>Data contoh fiktif: Raka, kelas 8 SMP, November 2026</span>
+    <p><a href="https://claude.ai/artifact/2TAPMnx3Vkb4S9tRfJBf5V" style="color:inherit;text-underline-offset:3px">Arsitektur sistem</a> · <a href="https://claude.ai/artifact/DhKqjDMgKqxhBNjiikENtn" style="color:inherit;text-underline-offset:3px">Onboarding</a></p>
+  </header>
+
+  <section class="viz" aria-label="Graf pendidikan">
+    <div class="stepbar">
+      <div class="steps" id="steps" role="group" aria-label="Langkah membangun graf">
+        <div class="ind" id="ind"></div>
+        <button type="button" data-s="1"><b>1</b><span>Jalur</span></button>
+        <button type="button" data-s="2"><b>2</b><span>Kompetensi</span></button>
+        <button type="button" data-s="3"><b>3</b><span>Anak</span></button>
+        <button type="button" data-s="4"><b>4</b><span>Input</span></button>
+        <button type="button" data-s="5"><b>5</b><span>Tujuan</span></button>
+        <button type="button" data-s="6"><b>6</b><span>Saran AI</span></button>
+      </div>
+      <button type="button" class="btn" id="play">Putar langkah 1–6</button>
+    </div>
+
+    <div class="caption" id="cap" aria-live="polite">
+      <h2 id="capTitle"></h2>
+      <p id="capText"></p>
+      <code class="pat" id="capCode"></code>
+    </div>
+
+    <div class="scroller" id="scroller">
+      <div class="fit" id="fit">
+        <div class="stage s3 s6" id="stage">
+          <svg class="edges" id="svg" aria-hidden="true"></svg>
+        </div>
+        <div class="pop" id="pop" role="dialog" aria-label="Detail node"></div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <span><i style="--c:var(--ink)"></i>Tahap dan sekolah</span>
+      <span><i style="--c:var(--c-blue)"></i>Kompetensi dan metode belajar</span>
+      <span><i style="--c:var(--c-plum)"></i>Minat, kegiatan, lomba</span>
+      <span><i style="--c:var(--c-teal)"></i>Olahraga</span>
+      <span><i style="--c:var(--c-amber)"></i>Observasi</span>
+      <span><i style="--c:var(--c-green)"></i>Jurusan dan karier</span>
+      <span><i class="dash"></i>Belum terjadi (rencana)</span>
+      <span><i class="bar"></i>Level penguasaan 1–4</span>
+      <span><i class="dot"></i>Disasar saran AI</span>
+    </div>
+    <p class="note">Klik node untuk melihat properti, relasi, dan query-nya. Graf ini adalah ego-graph Raka: relasi dari node Anak tidak digambar sebagai garis, melainkan sebagai atribut pada node tujuannya (bar level = <code>MASTERS.level</code>). Kolom menunjukkan tahap tempat sebuah kompetensi diajarkan (<code>TAUGHT_IN</code>).</p>
+  </section>
+
+  <section class="work">
+    <div class="panel">
+      <h2>Input berkala</h2>
+      <p>Setiap input menjadi node Observasi baru dan memperbarui level pada relasi anak. Coba ubah Aljabar ke level 3, atau Renang ke level 4, dan lihat bakat serta sarannya berubah.</p>
+      <form id="f" autocomplete="off">
+        <div class="row">
+          <div class="fld">
+            <label for="fSrc">Sumber</label>
+            <select id="fSrc">
+              <option value="Rapor">Rapor sekolah</option>
+              <option value="Catatan guru">Catatan guru</option>
+              <option value="Pengamatan">Pengamatan orang tua</option>
+              <option value="Tes atau lomba">Tes atau lomba</option>
+            </select>
+          </div>
+          <div class="fld">
+            <label for="fSubject">Tentang</label>
+            <select id="fSubject"></select>
+          </div>
+        </div>
+        <fieldset>
+          <legend>Level</legend>
+          <div class="seg">
+            <input type="radio" name="lv" id="lv1" value="1"><label for="lv1">1</label>
+            <input type="radio" name="lv" id="lv2" value="2"><label for="lv2">2</label>
+            <input type="radio" name="lv" id="lv3" value="3" checked><label for="lv3">3</label>
+            <input type="radio" name="lv" id="lv4" value="4"><label for="lv4">4</label>
+          </div>
+          <span class="hint" id="lvHint"></span>
+        </fieldset>
+        <fieldset>
+          <legend>Kesenangan anak (opsional)</legend>
+          <div class="seg seg5">
+            <input type="radio" name="en" id="en0" value="0" checked><label for="en0">–</label>
+            <input type="radio" name="en" id="en1" value="1"><label for="en1">1</label>
+            <input type="radio" name="en" id="en2" value="2"><label for="en2">2</label>
+            <input type="radio" name="en" id="en3" value="3"><label for="en3">3</label>
+            <input type="radio" name="en" id="en4" value="4"><label for="en4">4</label>
+          </div>
+          <span class="hint">Seberapa anak menikmatinya, dicatat terpisah dari kemampuannya.</span>
+        </fieldset>
+        <div class="fld">
+          <label for="fNote">Catatan (opsional)</label>
+          <input type="text" id="fNote" maxlength="120" placeholder="mis. sudah lancar persamaan linear">
+        </div>
+        <button type="submit" class="btn primary">Tambahkan ke graf</button>
+      </form>
+      <div class="codehead"><span>Query yang akan dijalankan</span><button type="button" class="btn small" data-copy="fQuery">Salin</button></div>
+      <pre id="fQuery"></pre>
+      <span class="hint">Halaman ini belum tersambung ke database. Input hanya hidup selama halaman terbuka.</span>
+    </div>
+
+    <div class="panel">
+      <h2>Bakat dan saran AI</h2>
+      <p>Contoh keluaran, dihitung dari aturan sederhana di halaman ini. Di sistem nyata, teksnya ditulis AI platform dari sub-graf yang sama.</p>
+      <h3>Sinyal bakat</h3>
+      <div class="majorRows" id="talents"></div>
+      <span class="hint">Tiap bukti ditimbang menurut sumbernya (lomba 1,0; rapor dan tes 0,8; guru atau pelatih 0,6; orang tua 0,4) dan bobotnya berkurang separuh tiap 3 tahun. Urutan memakai gabungan kemampuan dan kesenangan.</span>
+      <h3>Kesiapan jurusan</h3>
+      <div class="majorRows" id="majorRows"></div>
+      <h3>Saran</h3>
+      <ul class="sg-list" id="suggestions"></ul>
+    </div>
+  </section>
+
+  <section class="work">
+    <div class="panel">
+      <h2>Beban mingguan dan biaya</h2>
+      <p>Jam dan biaya menempel pada relasi anak ke kegiatan. Saran yang menambah kegiatan memperhitungkan sisa waktunya.</p>
+      <div class="fld" style="max-width:220px"><label for="capHours">Batas jam per minggu</label><input type="number" id="capHours" min="1" max="40" value="12"></div>
+      <div class="meter"><span>Terpakai</span><div class="track"><i id="loadBar"></i></div><b id="loadPct"></b></div>
+      <span class="hint" id="loadTxt"></span>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Kegiatan aktif</th><th class="num">Jam/minggu</th><th class="num">Biaya/bulan</th></tr></thead>
+        <tbody id="loadBody"></tbody>
+      </table></div>
+      <span class="hint">Angka contoh.</span>
+    </div>
+    <div class="panel">
+      <h2>Kalender lomba</h2>
+      <p>Tiap babak menyimpan batas pendaftaran dan tanggal pelaksanaan. Backend mengirim pengingat dan menautkan bahan dari arsip tahun sebelumnya.</p>
+      <ul class="cal" id="cal"></ul>
+      <span class="hint">Tanggal contoh, bukan jadwal resmi.</span>
+    </div>
+    <div class="panel">
+      <h2>Pembanding SMA</h2>
+      <p>Kandidat sekolah dinilai dengan bobot yang Anda atur. Kecocokan jalur adalah penilaian Anda sendiri (1–4) terhadap tujuan anak.</p>
+      <div class="wts">
+        <div class="fld"><label for="wCost">Bobot biaya</label><input type="range" id="wCost" min="0" max="5" value="3"></div>
+        <div class="fld"><label for="wDist">Bobot jarak</label><input type="range" id="wDist" min="0" max="5" value="2"></div>
+        <div class="fld"><label for="wFit">Bobot kecocokan jalur</label><input type="range" id="wFit" min="0" max="5" value="4"></div>
+      </div>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Sekolah</th><th>Kurikulum</th><th class="num">Biaya/bulan</th><th class="num">Jarak</th><th class="num">Jalur</th><th class="num">Skor</th></tr></thead>
+        <tbody id="schoolBody"></tbody>
+      </table></div>
+      <span class="hint">Tiga kandidat contoh.</span>
+    </div>
+  </section>
+
+  <section class="ref">
+    <h2>Model graf</h2>
+    <p>Data master (kurikulum, tahap, kompetensi, sekolah, lomba, olahraga, metode) diisi sekali dan terus Anda tambah, lalu dipakai semua anak. Node Anak, Observasi, dan Saran tumbuh seiring waktu.</p>
+    <div class="two">
+      <div class="tblwrap"><table>
+        <thead><tr><th>Label</th><th>Mewakili</th><th>Properti kunci</th></tr></thead>
+        <tbody>
+          <tr><td><code>Child</code></td><td>Satu anak</td><td><code>id, name</code></td></tr>
+          <tr><td><code>Curriculum</code></td><td>Nasional, Cambridge, IB, dan lainnya</td><td><code>id, name</code></td></tr>
+          <tr><td><code>Stage</code></td><td>Satu tingkat dalam satu kurikulum: Fase D, atau Lower Secondary</td><td><code>id, name, sequence</code></td></tr>
+          <tr><td><code>School</code></td><td>Sekolah yang ditempuh atau dipertimbangkan</td><td><code>id, name, type</code> (<code>public</code>, <code>private</code>, <code>international</code>)<code>, monthlyFee, distanceKm</code></td></tr>
+          <tr><td><code>Competency</code></td><td>Kemampuan yang bisa diukur</td><td><code>id, name, domain</code></td></tr>
+          <tr><td><code>Method</code></td><td>Cara belajar: sempoa, jarimatika, dan lainnya</td><td><code>id, name, subject</code></td></tr>
+          <tr><td><code>Interest</code></td><td>Ketertarikan yang teramati</td><td><code>id, name</code></td></tr>
+          <tr><td><code>Activity</code></td><td>Ekskul, kursus, proyek</td><td><code>id, name, type</code></td></tr>
+          <tr><td><code>Competition</code></td><td>Satu lomba bernama</td><td><code>id, name, type</code> (<code>general</code>, <code>osn</code>, <code>o2sn</code>, dan lainnya)<code>, organizer</code></td></tr>
+          <tr><td><code>CompetitionEdition</code></td><td>Penyelenggaraan lomba pada satu tahun</td><td><code>id, year</code></td></tr>
+          <tr><td><code>Round</code></td><td>Satu tahapan dalam satu edisi</td><td><code>id, tier</code> (<code>local</code>, <code>provincial</code>, <code>national</code>, <code>international</code>)<code>, sequence, registrationClosesAt, date</code></td></tr>
+          <tr><td><code>Document</code></td><td>Berkas yang diunggah: kisi-kisi, soal, juknis, catatan</td><td><code>id, type</code> (<code>blueprint</code>, <code>past_paper</code>, <code>guideline</code>, <code>note</code>)<code>, title, fileKey, uploadedAt</code></td></tr>
+          <tr><td><code>Sport</code></td><td>Badminton, renang, basket, Aikido</td><td><code>id, name, competitive</code></td></tr>
+          <tr><td><code>Talent</code></td><td>Bidang bakat tempat bukti dikumpulkan</td><td><code>id, name</code></td></tr>
+          <tr><td><code>Observation</code></td><td>Satu input berkala</td><td><code>id, date, source, level, enjoyment, note</code></td></tr>
+          <tr><td><code>Major</code>, <code>Career</code></td><td>Tujuan</td><td><code>id, name</code></td></tr>
+          <tr><td><code>Suggestion</code></td><td>Keluaran AI</td><td><code>id, createdAt, priority, text, status</code></td></tr>
+        </tbody>
+      </table></div>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Pola relasi</th><th>Properti</th></tr></thead>
+        <tbody>
+          <tr><td><code>(Stage)-[:PART_OF]-&gt;(Curriculum)</code></td><td></td></tr>
+          <tr><td><code>(Stage)-[:NEXT]-&gt;(Stage)</code></td><td></td></tr>
+          <tr><td><code>(Stage)-[:EQUIVALENT_TO]-&gt;(Stage)</code></td><td><code>grade</code></td></tr>
+          <tr><td><code>(School)-[:USES]-&gt;(Curriculum)</code></td><td></td></tr>
+          <tr><td><code>(Child)-[:ATTENDS]-&gt;(School)</code></td><td><code>startedAt, endedAt</code></td></tr>
+          <tr><td><code>(Child)-[:CONSIDERS]-&gt;(School)</code></td><td><code>pathFit, note</code></td></tr>
+          <tr><td><code>(Child)-[:ENROLLED_IN]-&gt;(Stage)</code></td><td><code>startedAt, status</code></td></tr>
+          <tr><td><code>(Competency)-[:TAUGHT_IN]-&gt;(Stage)</code></td><td></td></tr>
+          <tr><td><code>(Competency)-[:PREREQUISITE_OF]-&gt;(Competency)</code></td><td></td></tr>
+          <tr><td><code>(Child)-[:MASTERS]-&gt;(Competency)</code></td><td><code>level, enjoyment, asOf</code></td></tr>
+          <tr><td><code>(Child)-[:LEARNS_WITH]-&gt;(Method)</code></td><td><code>startedAt, endedAt</code></td></tr>
+          <tr><td><code>(Method)-[:TRAINS]-&gt;(Competency)</code></td><td></td></tr>
+          <tr><td><code>(Child)-[:INTERESTED_IN]-&gt;(Interest)</code></td><td><code>score, since</code></td></tr>
+          <tr><td><code>(Child)-[:PARTICIPATES_IN]-&gt;(Activity)</code></td><td><code>status, enjoyment, hoursPerWeek, monthlyCost</code></td></tr>
+          <tr><td><code>(Competition)-[:HAS_EDITION]-&gt;(CompetitionEdition)</code></td><td></td></tr>
+          <tr><td><code>(CompetitionEdition)-[:HAS_ROUND]-&gt;(Round)</code></td><td></td></tr>
+          <tr><td><code>(Round)-[:NEXT]-&gt;(Round)</code></td><td></td></tr>
+          <tr><td><code>(Child)-[:PARTICIPATES_IN]-&gt;(Round)</code></td><td><code>result, advanced</code></td></tr>
+          <tr><td><code>(Document)-[:BELONGS_TO]-&gt;(CompetitionEdition)</code></td><td></td></tr>
+          <tr><td><code>(Document)-[:COVERS]-&gt;(Competency)</code></td><td></td></tr>
+          <tr><td><code>(Competition)-[:TESTS]-&gt;(Competency)</code></td><td></td></tr>
+          <tr><td><code>(Child)-[:PRACTICES]-&gt;(Sport)</code></td><td><code>since, level, enjoyment, hoursPerWeek, monthlyCost</code></td></tr>
+          <tr><td><code>(Interest)-[:CHANNELED_INTO]-&gt;(Activity)</code></td><td></td></tr>
+          <tr><td><code>(Activity)-[:TRAINS]-&gt;(Competency)</code></td><td></td></tr>
+          <tr><td><code>(Competency)-[:INDICATES]-&gt;(Talent)</code></td><td></td></tr>
+          <tr><td><code>(Sport)-[:INDICATES]-&gt;(Talent)</code></td><td></td></tr>
+          <tr><td><code>(Observation)-[:ABOUT]-&gt;(Child)</code></td><td></td></tr>
+          <tr><td><code>(Observation)-[:MEASURES]-&gt;(Competency)</code></td><td></td></tr>
+          <tr><td><code>(Competency)-[:REQUIRED_FOR]-&gt;(Major)</code></td><td><code>min</code></td></tr>
+          <tr><td><code>(Interest)-[:ALIGNS_WITH]-&gt;(Major)</code></td><td></td></tr>
+          <tr><td><code>(Major)-[:LEADS_TO]-&gt;(Career)</code></td><td></td></tr>
+          <tr><td><code>(Suggestion)-[:TARGETS]-&gt;(Competency)</code></td><td></td></tr>
+          <tr><td><code>(Suggestion)-[:BASED_ON]-&gt;(Observation)</code></td><td></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <h3>Kemampuan, kesenangan, riwayat, dan bobot</h3>
+    <p>Level dan <code>enjoyment</code> disimpan terpisah pada relasi anak. Relasi hanya memegang nilai terbaru, sedangkan riwayatnya dibaca dari rangkaian Observation berurutan tanggal. Bobot sumber disimpan sebagai konfigurasi di backend, dan peluruhan menurut umur dihitung saat query, sehingga aturannya bisa diubah tanpa menulis ulang data.</p>
+    <h3>Jenjang pada dua kurikulum</h3>
+    <p>Graf memakai tahap kurikulum nasional sebagai sumbu waktu. Tahap kurikulum lain dipetakan lewat <code>EQUIVALENT_TO</code>. Batas kelas Cambridge berbeda antarsekolah, jadi pemetaan ini diisi per sekolah, bukan sekali untuk semua.</p>
+    <div class="tblwrap" style="max-width:820px"><table>
+      <thead><tr><th>Jenjang</th><th>Nasional</th><th>Cambridge</th></tr></thead>
+      <tbody>
+        <tr><td>SD</td><td>Fase A–C, kelas 1–6</td><td>Primary</td></tr>
+        <tr><td>SMP</td><td>Fase D, kelas 7–9</td><td>Lower Secondary</td></tr>
+        <tr><td>SMA</td><td>Fase E–F, kelas 10–12</td><td>Upper Secondary (IGCSE), lalu Advanced (AS &amp; A Level)</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="ref">
+    <h2>Lomba: tahapan dan arsip tahunan</h2>
+    <p>Satu lomba punya edisi per tahun, dan tiap edisi punya babak berjenjang. Berkas menempel pada edisinya, jadi saat anak ikut lagi tahun depan, kisi-kisi, soal, juknis, dan catatan tahun sebelumnya langsung jadi bahan belajar.</p>
+    <ol class="ladder">
+      <li><b>Lokal</b><span>Sekolah, lalu kabupaten atau kota</span></li>
+      <li><b>Provinsi</b><span>Peserta yang lolos seleksi lokal</span></li>
+      <li><b>Nasional</b><span>Wakil tiap provinsi</span></li>
+      <li><b>Internasional</b><span>Tim yang mewakili negara</span></li>
+    </ol>
+    <div class="archive">
+      <div class="archive-h">
+        <h3>Arsip OSN Informatika <span class="hint">(contoh entri, bukan berkas nyata)</span></h3>
+        <div class="years" role="group" aria-label="Tahun edisi">
+          <button type="button" class="btn small" data-y="2025">2025</button>
+          <button type="button" class="btn small" data-y="2026" aria-pressed="true">2026</button>
+        </div>
+      </div>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Jenis</th><th>Judul</th><th>Babak</th><th>Catatan Anda</th></tr></thead>
+        <tbody id="archiveBody"></tbody>
+      </table></div>
+    </div>
+    <div class="q">
+      <div class="codehead"><h3>Bahan referensi dari tahun-tahun sebelumnya</h3><button type="button" class="btn small" data-copy="q4">Salin</button></div>
+<pre id="q4">MATCH (c:Competition {id: $competitionId})-[:HAS_EDITION]->(e:CompetitionEdition)
+MATCH (d:Document)-[:BELONGS_TO]->(e)
+OPTIONAL MATCH (d)-[:COVERS]->(k:Competency)
+RETURN e.year AS year, d.type AS type, d.title AS title,
+       d.fileKey AS fileKey, collect(k.name) AS competencies
+ORDER BY year DESC, type</pre>
+    </div>
+  </section>
+
+  <section class="ref">
+    <h2>Dari input ke saran</h2>
+    <p>Langkah 3 memicu langkah 4 sampai 6 secara otomatis, sehingga saran muncul beberapa detik setelah Anda menyimpan input.</p>
+    <ol class="pipe">
+      <li><h3>Anda memberi input</h3>Form, foto rapor, atau pesan bebas. Tiap input membawa tanggal dan sumber.</li>
+      <li><h3>AI mengekstrak</h3>Teks bebas diubah menjadi JSON sesuai skema: kompetensi mana, level berapa. Yang ambigu ditanyakan balik.</li>
+      <li><h3>Tulis ke graf</h3>Observasi dibuat baru, relasi MASTERS diperbarui dengan MERGE. Riwayat tetap utuh.</li>
+      <li><h3>Ambil sub-graf</h3>Query mengambil celah, jalur prasyarat, dan observasi enam bulan terakhir.</li>
+      <li><h3>AI menyusun saran</h3>Sub-graf dikirim sebagai konteks. Model wajib menyebut node bukti untuk tiap saran.</li>
+      <li><h3>Simpan dan tampilkan</h3>Saran menjadi node yang menunjuk ke buktinya, lalu dikirim ke layar lewat SSE atau WebSocket.</li>
+    </ol>
+  </section>
+
+  <section class="ref">
+    <h2>Query inti</h2>
+    <p>Ditulis dalam Cypher, yang dijalankan ArcadeDB secara native. Semua nama label, relasi, dan properti memakai bahasa Inggris. Nilai seperti id dan tanggal batas dihitung di backend Go dan dikirim sebagai parameter. Query ini belum diuji di ArcadeDB.</p>
+    <div class="two">
+      <div class="q">
+        <div class="codehead"><h3>Celah menuju satu jurusan</h3><button type="button" class="btn small" data-copy="q1">Salin</button></div>
+        <p>Menelusuri rantai prasyarat ke belakang dan mengembalikan kompetensi yang levelnya di bawah syarat.</p>
+<pre id="q1">MATCH (c:Child {id: $childId})
+MATCH (k:Competency)-[r:REQUIRED_FOR]->(m:Major {id: $majorId})
+MATCH (base:Competency)-[:PREREQUISITE_OF*0..]->(k)
+OPTIONAL MATCH (c)-[ms:MASTERS]->(base)
+WITH k, r, base, coalesce(ms.level, 0) AS level
+WHERE level < r.min
+RETURN k.name AS requirement, base.name AS needsWork,
+       level, r.min AS target
+ORDER BY level, requirement</pre>
+      </div>
+      <div class="q">
+        <div class="codehead"><h3>Konteks untuk AI</h3><button type="button" class="btn small" data-copy="q3">Salin</button></div>
+        <p>Satu baris berisi penguasaan, minat, dan observasi terbaru. Hasilnya dikirim sebagai JSON ke AI platform.</p>
+<pre id="q3">MATCH (c:Child {id: $childId})
+OPTIONAL MATCH (c)-[ms:MASTERS]->(k:Competency)
+OPTIONAL MATCH (c)-[i:INTERESTED_IN]->(n:Interest)
+OPTIONAL MATCH (o:Observation)-[:ABOUT]->(c)
+  WHERE o.date >= date($since)
+RETURN c.id AS child,
+  collect(DISTINCT {competency: k.name, level: ms.level}) AS mastery,
+  collect(DISTINCT {interest: n.name, score: i.score}) AS interests,
+  collect(DISTINCT o {.date, .source, .level, .note}) AS observations</pre>
+      </div>
+      <div class="q">
+        <div class="codehead"><h3>Riwayat level satu kompetensi</h3><button type="button" class="btn small" data-copy="q5">Salin</button></div>
+        <p>Dasar grafik tren pada detail node.</p>
+<pre id="q5">MATCH (o:Observation)-[:ABOUT]->(:Child {id: $childId})
+MATCH (o)-[:MEASURES]->(k:Competency {id: $competencyId})
+RETURN o.date AS date, o.level AS level,
+       o.enjoyment AS enjoyment, o.source AS source
+ORDER BY date</pre>
+      </div>
+      <div class="q">
+        <div class="codehead"><h3>Beban mingguan dan biaya</h3><button type="button" class="btn small" data-copy="q6">Salin</button></div>
+        <p>Menjumlahkan semua kegiatan dan olahraga yang masih berjalan.</p>
+<pre id="q6">MATCH (c:Child {id: $childId})-[r:PARTICIPATES_IN|PRACTICES]->(x)
+WHERE r.status = 'active'
+RETURN sum(r.hoursPerWeek) AS hoursPerWeek,
+       sum(r.monthlyCost) AS monthlyCost,
+       collect(x.name) AS activities</pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="ref">
+    <h2>Urutan pengerjaan</h2>
+    <ol class="build">
+      <li>Pasang constraint unik pada <code>id</code> untuk setiap label.</li>
+      <li>Isi data master: kurikulum, tahap, kompetensi dan prasyaratnya, lalu sekolah, lomba, olahraga, dan metode. Tambah terus seiring waktu.</li>
+      <li>Buat endpoint input yang menjalankan query tulis observasi (lihat panel Input berkala).</li>
+      <li>Jalankan query celah setiap kali ada tulisan baru.</li>
+      <li>Sambungkan AI platform: kirim hasil query konteks, terima JSON saran.</li>
+      <li>Simpan Saran sebagai node dan catat respons Anda pada properti <code>status</code> (<code>accepted</code> atau <code>rejected</code>), supaya saran berikutnya belajar dari situ.</li>
+    </ol>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"><span id="toastT"></span><button type="button" class="btn small" id="toastB">Lihat di graf</button></div>
+
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s);
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const COL={A:96,B:260,C:424,D:608,E:792,F:956,S:1160,K:1344}, W=128, STW=1432;
+const STAGE_OF={A:'fA',B:'fB',C:'fC',D:'fD',E:'fE',F:'fF',S:'s1'};
+const LABEL={stage:'Stage',school:'School',comp:'Competency',method:'Method',interest:'Interest',activity:'Activity',contest:'Competition',sport:'Sport',obs:'Observation',major:'Major',career:'Career'};
+const STATUS_ID={done:'selesai',active:'berjalan',planned:'rencana'};
+const Y={fase:96,sek:150,k1:222,k2:278,k3:334,k4:390,ch1:433,m1:478,ch2:514,m2:550,obs:640};
+const LEVEL_SPORT=['Belum dinilai','Pemula','Dasar','Terampil','Mahir'];
+const DOM={logic:'Logika dan komputasi',language:'Bahasa',science_domain:'Sains',visual:'Visual dan seni',kinesthetic:'Kinestetik (olahraga)'};
+const DOMAIN_OF={Numerasi:'logic',Komputasi:'logic',Literasi:'language',Sains:'science_domain'};
+const LEVEL_COMP=['Belum dinilai','Perlu intervensi','Dasar','Cakap','Mahir'];
+const LEVEL_INTEREST=['Belum dinilai','Sekilas','Tertarik','Kuat','Sangat kuat'];
+const fmt=new Intl.DateTimeFormat('id-ID',{day:'numeric',month:'short',year:'numeric'});
+const fd=iso=>fmt.format(new Date(iso+'T00:00:00'));
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- data: [id,type,col,y,nama,sub,status,step,level,props] ---------- */
+const nodes={}, order=[];
+function add(id,t,c,y,n,s,st,step,lv,p,g){const o={id,t,c,y,n,s,st,step,lv,p:p||{}};if(g){o.x=g.x;o.w=g.w;o.dom=g.dom;o.ev=g.ev}if(t==='comp')o.dom=DOMAIN_OF[s];nodes[id]=o;order.push(o);return o}
+const X=o=>o.x||COL[o.c];
+add('fA','stage','A',Y.fase,'Fase A','SD kelas 1–2','done',1,null,{years:'2019–2021'});
+add('fB','stage','B',Y.fase,'Fase B','SD kelas 3–4','done',1,null,{years:'2021–2023'});
+add('fC','stage','C',Y.fase,'Fase C','SD kelas 5–6','done',1,null,{years:'2023–2025'});
+add('fD','stage','D',Y.fase,'Fase D','SMP kelas 7–9','active',1,null,{years:'2025–2028',position:'kelas 8'});
+add('fE','stage','E',Y.fase,'Fase E','SMA kelas 10','planned',1,null,{years:'2028–2029'});
+add('fF','stage','F',Y.fase,'Fase F','SMA kelas 11–12','planned',1,null,{years:'2029–2031'});
+add('s1','stage','S',Y.fase,'Kuliah S1','Semester 1–8','planned',1,null,{years:'2031–2035'});
+add('primary_school','school','B',Y.sek,'SD Negeri','Negeri · Kurikulum Nasional · Fase A–C','done',1,null,{type:'negeri',curriculum:'Nasional',stage:'Fase A–C'},{x:260,w:456});
+add('junior_high','school','D',Y.sek,'SMP Swasta','Swasta · Cambridge','active',1,null,{type:'swasta',curriculum:'Cambridge',stage:'Lower Secondary',equivalentTo:'Fase D, kelas 8'});
+add('senior_high','school','E',Y.sek,'SMA belum dipilih','Opsi: negeri, swasta, atau Cambridge','planned',1,null,{options:'Nasional (Fase E–F) atau Cambridge (IGCSE, lalu AS & A Level)'},{x:874,w:292});
+add('arithmetic','comp','A',Y.k1,'Berhitung dasar','Numerasi','done',2,4,{asOf:'2021-06-18'});
+add('fractions','comp','C',Y.k1,'Pecahan & rasio','Numerasi','done',2,3,{asOf:'2025-06-20'});
+add('algebra','comp','D',Y.k1,'Aljabar','Numerasi','active',2,2,{asOf:'2026-06-19'});
+add('calculus','comp','F',Y.k1,'Kalkulus dasar','Numerasi','planned',2,0);
+add('reading','comp','A',Y.k2,'Membaca lancar','Literasi','done',2,4,{asOf:'2021-06-18'});
+add('comprehension','comp','B',Y.k2,'Memahami teks','Literasi','done',2,3,{asOf:'2023-03-10'});
+add('writing','comp','D',Y.k2,'Menulis argumen','Literasi','active',2,3,{asOf:'2026-06-19'});
+add('english','comp','F',Y.k2,'Inggris akademik','Literasi','planned',2,0);
+add('ipas','comp','B',Y.k3,'IPAS dasar','Sains','done',2,3,{asOf:'2023-06-16'});
+add('science','comp','D',Y.k3,'IPA terpadu','Sains','active',2,3,{asOf:'2026-06-19'});
+add('physics','comp','E',Y.k3,'Fisika','Sains','planned',2,0);
+add('logic','comp','C',Y.k4,'Logika komputasi','Komputasi','done',2,4,{asOf:'2025-06-20'});
+add('programming','comp','D',Y.k4,'Pemrograman','Komputasi','active',2,3,{asOf:'2026-09-25'});
+add('algorithms','comp','F',Y.k4,'Algoritma','Komputasi','planned',2,0);
+add('abacus','method','A',Y.k3,'Sempoa','Metode · kelas 1–3','done',3,null,{subject:'arithmetic',period:'2019–2022'});
+add('drawing','interest','A',Y.m1,'Menggambar','Minat sejak kelas 1','done',3,3,null,{dom:'visual'});
+add('poster','contest','B',Y.m1,'Lomba poster','Umum · juara 2','done',3,null,{type:'lomba umum',tier:'kota',result:'juara 2',year:'2023'},{dom:'visual',ev:3});
+add('robotics','interest','C',Y.m1,'Robotika','Minat sejak kelas 5','done',3,4,null,{dom:'logic'});
+add('robotics_club','activity','D',Y.m1,'Ekskul robotik','Berjalan · kelas 8','active',3,null,{type:'robotics_club'});
+add('portfolio','activity','E',Y.m1,'Portofolio kode','Rencana · kelas 10','planned',3,null,{type:'proyek'});
+add('osn','contest','F',Y.m1,'OSN Informatika','OSN · kelas 11','planned',3,null,{type:'OSN',rounds:'lokal, provinsi, nasional, internasional',archive:'7 dokumen dari edisi 2025 dan 2026'});
+add('swimming','sport','A',Y.m2,'Renang','Sejak kelas 1','active',3,3,{competitive:'ya'},{dom:'kinesthetic'});
+add('badminton','sport','B',Y.m2,'Badminton','Kelas 3–5','done',3,2,{competitive:'ya'},{dom:'kinesthetic'});
+add('aikido','sport','C',Y.m2,'Aikido','Sejak kelas 5','active',3,3,{competitive:'tidak, naik tingkat lewat ujian'},{dom:'kinesthetic'});
+add('basketball','sport','D',Y.m2,'Basket','Sejak kelas 7','active',3,2,{competitive:'ya'},{dom:'kinesthetic'});
+add('o1','obs','B',Y.obs,'Catatan guru',fd('2023-03-10'),'done',4,null,{date:'2023-03-10',source:'Catatan guru',note:'Cepat menangkap isi cerita, perlu latihan menyimpulkan.'});
+add('o2','obs','C',Y.obs,'Tes minat bakat',fd('2025-02-18'),'done',4,null,{date:'2025-02-18',source:'Tes atau lomba',note:'Skor tertinggi pada bidang teknik dan mekanik.'});
+add('o3','obs','D',Y.obs,'Rapor kelas 7',fd('2026-06-19'),'done',4,null,{date:'2026-06-19',source:'Rapor',note:'Aljabar masih di level dasar. IPA dan menulis sudah cakap.'});
+add('computer_science','major','S',306,'Informatika','Jurusan S1','planned',5);
+add('product_design','major','S',Y.m1,'Desain Produk','Jurusan S1','planned',5);
+add('se','career','K',306,'Software engineer','Karier','planned',5);
+add('pd','career','K',Y.m1,'Desainer produk','Karier','planned',5);
+
+/* evidence metadata: enjoyment, source, level history, weekly load */
+const SRC_WEIGHT={contest:1,report:.8,test:.8,teacher:.6,parent:.4}, HALF_LIFE=3;
+const SRC_OF={'Rapor':'report','Catatan guru':'teacher','Pengamatan':'parent','Tes atau lomba':'test'};
+function meta(id,enjoy,src,hist,hours,cost){const o=nodes[id];o.enjoy=enjoy;o.src=src;o.hist=hist||[];if(o.hist.length)o.p.asOf=o.hist[o.hist.length-1][0];if(hours!=null){o.hours=hours;o.cost=cost||0}}
+meta('arithmetic',3,'report',[['2020-06-19',2],['2021-06-18',4]]);
+meta('fractions',2,'report',[['2024-06-21',2],['2025-06-20',3]]);
+meta('algebra',2,'report',[['2025-12-19',2],['2026-06-19',2]]);
+meta('reading',3,'report',[['2020-06-19',3],['2021-06-18',4]]);
+meta('comprehension',3,'teacher',[['2022-06-17',2],['2023-03-10',3]]);
+meta('writing',2,'report',[['2025-12-19',2],['2026-06-19',3]]);
+meta('ipas',3,'report',[['2022-06-17',2],['2023-06-16',3]]);
+meta('science',3,'report',[['2025-12-19',3],['2026-06-19',3]]);
+meta('logic',4,'report',[['2024-06-21',3],['2025-06-20',4]]);
+meta('programming',4,'teacher',[['2025-12-19',2],['2026-06-19',3],['2026-09-25',3]]);
+meta('drawing',4,'parent',[['2019-08-01',3],['2023-05-20',3]]);
+meta('robotics',4,'test',[['2024-01-15',3],['2025-02-18',4]]);
+meta('poster',4,'contest',[['2023-05-20',3]]);
+meta('swimming',3,'parent',[['2020-01-10',1],['2022-06-01',2],['2025-06-01',3]],2,400000);
+meta('badminton',2,'parent',[['2022-01-10',1],['2024-06-01',2]]);
+meta('aikido',4,'teacher',[['2024-01-10',1],['2025-06-01',2],['2026-08-01',3]],3,350000);
+meta('basketball',3,'parent',[['2025-08-01',1],['2026-06-01',2]],2,0);
+meta('robotics_club',4,'teacher',[],3,300000);
+
+/* edges: [from,to,rel,color,step,route,props] */
+const edges=[];
+function link(f,t,rel,k,step,route,p){edges.push({f,t,rel,k,route:route||'auto',p:p||null,step:Math.max(step,nodes[f].step,nodes[t].step)})}
+[['fA','fB'],['fB','fC'],['fC','fD'],['fD','fE'],['fE','fF'],['fF','s1']].forEach(x=>link(x[0],x[1],'NEXT','ink',1));
+[['arithmetic','fractions'],['fractions','algebra'],['algebra','calculus'],['reading','comprehension'],['comprehension','writing'],['writing','english'],
+ ['ipas','science'],['science','physics'],['algebra','physics'],['logic','programming'],['programming','algorithms']].forEach(x=>link(x[0],x[1],'PREREQUISITE_OF','blue',2));
+link('drawing','poster','CHANNELED_INTO','plum',3);
+link('robotics','robotics_club','CHANNELED_INTO','plum',3);
+link('robotics_club','portfolio','PREPARES_FOR','plum',3);
+link('portfolio','osn','PREPARES_FOR','plum',3);
+link('robotics_club','programming','TRAINS','plum',3);
+link('abacus','arithmetic','TRAINS','blue',3,'side');
+link('osn','algorithms','TRAINS','plum',3);
+link('o1','comprehension','MEASURES','amber',4,'side');
+link('o2','robotics','REVEALS','amber',4,'side');
+link('o3','algebra','MEASURES','amber',4,'side');
+link('o3','writing','MEASURES','amber',4,'side');
+link('o3','science','MEASURES','amber',4,'side');
+link('calculus','computer_science','REQUIRED_FOR','green',5,null,{min:3});
+link('english','computer_science','REQUIRED_FOR','green',5,null,{min:3});
+link('algorithms','computer_science','REQUIRED_FOR','green',5,null,{min:3});
+link('english','product_design','REQUIRED_FOR','green',5,null,{min:2});
+link('calculus','product_design','REQUIRED_FOR','green',5,null,{min:2});
+link('robotics','computer_science','ALIGNS_WITH','green',5,'chan');edges[edges.length-1].yc=Y.ch1;
+link('drawing','product_design','ALIGNS_WITH','green',5,'chan');edges[edges.length-1].yc=Y.ch2;
+link('computer_science','se','LEADS_TO','green',5);
+link('product_design','pd','LEADS_TO','green',5);
+
+const STEPS=[null,
+ ['Mulai dari jalur waktu dan sekolah','Tujuh tahap dari SD kelas 1 sampai kuliah, dirangkai berurutan. Di bawahnya ada sekolah tempat tahap itu ditempuh: negeri, swasta, atau internasional dengan kurikulumnya sendiri.','(:School)-[:USES]->(:Curriculum)<-[:PART_OF]-(:Stage)'],
+ ['Tambahkan kompetensi dan prasyaratnya','Setiap tahap mengajarkan kompetensi. Relasi prasyarat membentuk rantai lintas jenjang, misalnya pecahan ke aljabar ke kalkulus.','(:Competency)-[:PREREQUISITE_OF]->(:Competency)'],
+ ['Masukkan anak ke dalam graf','Raka terhubung ke kompetensi lewat level penguasaan (bar 1–4), lalu ke minat, lomba, olahraga, dan metode belajar seperti sempoa. Semuanya menjadi bukti bakat.','(:Child)-[:MASTERS {level}]->(:Competency)'],
+ ['Jadikan setiap input sebuah node','Rapor, catatan guru, dan pengamatan Anda disimpan sebagai Observasi bertanggal. Riwayat tidak ditimpa, jadi tren tetap bisa dibaca.','(:Observation)-[:MEASURES]->(:Competency)'],
+ ['Pasang tujuan','Jurusan menyatakan level minimum yang dibutuhkan. Dari sini graf bisa menjawab pertanyaan utamanya: jalur mana yang masih berlubang?','(:Competency)-[:REQUIRED_FOR {min}]->(:Major)'],
+ ['Biarkan AI membaca graf','AI menerima sub-graf di sekitar celah dan menulis node Saran yang menunjuk ke buktinya. Titik ungu menandai node yang disasar.','(:Suggestion)-[:TARGETS]->(:Competency)']
+];
+
+/* ---------- build stage ---------- */
+const stage=$('#stage'), svg=$('#svg'), fitEl=$('#fit'), scroller=$('#scroller'), pop=$('#pop');
+let STH=692, step=6, sel=null, hover=null, focusSet=null, scale=1, added=[], suggestions=[], aiTargets=new Set();
+
+[['SD','6 tahun',20,488],['SMP','3 tahun',532,152,'Sekarang: kelas 8'],['SMA','3 tahun',716,316],['Kuliah','4 tahun',1084,152],['Karier','',1268,152]].forEach(b=>{
+  const d=document.createElement('div');d.className='band';d.style.left=b[2]+'px';d.style.width=b[3]+'px';
+  d.innerHTML='<b>'+b[0]+(b[1]?'<em>'+b[1]+'</em>':'')+'</b>'+(b[4]?'<span class="now">'+b[4]+'</span>':'');
+  stage.insertBefore(d,svg);
+});
+const lanes=[['Kompetensi dan metode belajar',184,2],['Minat, lomba, dan olahraga',440,3],['Observasi: input berkala',602,4]].map(l=>{
+  const d=document.createElement('div');d.className='lane';d.textContent=l[0];d.style.top=l[1]+'px';d.dataset.step=l[2];stage.appendChild(d);return d;
+});
+
+function mkNode(o){
+  const w=document.createElement('div');w.className='nw';
+  const b=document.createElement('button');b.type='button';b.className='n t-'+o.t+' s-'+o.st;b.dataset.id=o.id;
+  let h='<span>'+esc(o.n)+'</span><small>'+esc(o.s)+'</small>';
+  if(o.lv!=null && o.st!=='planned') h+='<span class="lv" aria-hidden="true"><i></i><i></i><i></i><i></i></span>';
+  h+='<span class="ai" aria-hidden="true">✦</span>';
+  b.innerHTML=h;w.appendChild(b);stage.appendChild(w);o.el=b;o.wrap=w;place(o);paintLevel(o);
+  b.addEventListener('click',ev=>{ev.stopPropagation();select(o.id,ev.detail===0)});
+  b.addEventListener('pointerenter',ev=>{if(ev.pointerType==='mouse'){hover=neighbors(o.id);paint()}});
+  b.addEventListener('pointerleave',()=>{if(hover){hover=null;paint()}});
+  return o;
+}
+function place(o){const w=o.w||W;o.wrap.style.width=w+'px';o.wrap.style.left=(X(o)-w/2)+'px';o.wrap.style.top=o.y+'px'}
+function paintLevel(o){const b=o.el.querySelectorAll('.lv i');b.forEach((x,i)=>x.classList.toggle('f',i<o.lv));
+  if(o.lv!=null) o.el.setAttribute('aria-label',o.n+', '+LABEL[o.t]+', '+(o.st==='planned'?'belum diajarkan':'level '+o.lv+' dari 4'))}
+order.forEach(mkNode);
+
+function rect(o){const h=o.el.offsetHeight,x=X(o),w=o.w||W;return{cx:x,cy:o.y,l:x-w/2,r:x+w/2,t:o.y-h/2,b:o.y+h/2}}
+function pathFor(e,i){
+  const s=rect(nodes[e.f]),t=rect(nodes[e.t]);
+  if(e.route==='chan'){const yc=e.yc,x0=s.cx+24,up=yc<s.cy,k=Math.min(18,yc-t.b);return`M${x0},${up?s.t:s.b} Q${x0},${yc} ${x0+16},${yc} L${t.cx-18},${yc} Q${t.cx},${yc} ${t.cx},${yc-k} L${t.cx},${t.b}`}
+  if(e.route==='side'){
+    const gx=t.l-14-(e.off||0),x1=gx<s.cx?s.l:s.r,dx=gx<x1?-1:1,dy=t.cy<s.cy?-1:1,r=8;
+    return`M${x1},${s.cy} L${gx-dx*r},${s.cy} Q${gx},${s.cy} ${gx},${s.cy+dy*r} L${gx},${t.cy-dy*r} Q${gx},${t.cy} ${gx+r},${t.cy} L${t.l},${t.cy}`;
+  }
+  if(Math.abs(t.cx-s.cx)<40){const up=t.cy<s.cy;return`M${s.cx},${up?s.t:s.b} L${t.cx},${up?t.b:t.t}`}
+  const d=t.cx>s.cx?1:-1,x1=d>0?s.r:s.l,x2=d>0?t.l:t.r,c=Math.max(18,Math.abs(x2-x1)*.5);
+  return`M${x1},${s.cy} C${x1+d*c},${s.cy} ${x2-d*c},${t.cy} ${x2},${t.cy}`;
+}
+const NS='http://www.w3.org/2000/svg';
+function drawEdges(){
+  svg.setAttribute('width',STW);svg.setAttribute('height',STH);
+  while(svg.firstChild) svg.removeChild(svg.firstChild);
+  edges.forEach((e,i)=>{
+    const g=document.createElementNS(NS,'g');g.setAttribute('class','e k-'+e.k+(nodes[e.t].st==='planned'?' pl':''));
+    const p=document.createElementNS(NS,'path');p.setAttribute('class','ln');p.setAttribute('d',pathFor(e,i));g.appendChild(p);svg.appendChild(g);
+    const L=p.getTotalLength(),a=p.getPointAtLength(L),b=p.getPointAtLength(Math.max(0,L-5)),an=Math.atan2(a.y-b.y,a.x-b.x),
+      cs=Math.cos(an),sn=Math.sin(an),bx=a.x-7*cs,by=a.y-7*sn;
+    const ah=document.createElementNS(NS,'path');ah.setAttribute('class','ah');
+    ah.setAttribute('d',`M${a.x},${a.y} L${bx-3.4*sn},${by+3.4*cs} L${bx+3.4*sn},${by-3.4*cs} Z`);g.appendChild(ah);
+    const m=p.getPointAtLength(L/2),tx=document.createElementNS(NS,'text');
+    tx.setAttribute('x',m.x);tx.setAttribute('y',m.y-5);tx.textContent=e.rel+(e.p&&e.p.min?' min '+e.p.min:'');if(L>=96)g.appendChild(tx);
+    e.el=g;
+  });
+}
+
+/* ---------- focus / paint ---------- */
+function walk(id,dir,rel,out){edges.forEach(e=>{if(e.rel!==rel||e.step>step)return;const a=dir>0?e.f:e.t,b=dir>0?e.t:e.f;if(a===id&&!out.has(b)){out.add(b);walk(b,dir,rel,out)}})}
+function neighbors(id){
+  const s=new Set([id]);
+  edges.forEach(e=>{if(e.step>step)return;if(e.f===id)s.add(e.t);if(e.t===id)s.add(e.f)});
+  const o=nodes[id];
+  if(o.t==='major'||o.t==='career'){
+    [...s].filter(x=>nodes[x].t==='major').forEach(j=>edges.forEach(e=>{if(e.t===j&&e.step<=step){s.add(e.f);if(e.rel==='REQUIRED_FOR')walk(e.f,-1,'PREREQUISITE_OF',s)}}));
+  }
+  if(o.t==='comp'){walk(id,-1,'PREREQUISITE_OF',s);walk(id,1,'PREREQUISITE_OF',s)}
+  return s;
+}
+function paint(){
+  const f=hover||focusSet;
+  order.forEach(o=>{const on=o.step<=step;o.el.classList.toggle('on',on);o.el.classList.toggle('dim',!!f&&!f.has(o.id));
+    o.el.classList.toggle('sel',sel===o.id);o.el.classList.toggle('has-ai',aiTargets.has(o.id));o.el.tabIndex=on?0:-1});
+  edges.forEach(e=>{if(!e.el)return;const on=e.step<=step,hl=!!f&&f.has(e.f)&&f.has(e.t);
+    e.el.classList.toggle('on',on);e.el.classList.toggle('hl',hl);e.el.classList.toggle('dim',!!f&&!hl)});
+  lanes.forEach(l=>l.classList.toggle('on',+l.dataset.step<=step));
+  stage.classList.toggle('s3',step>=3);stage.classList.toggle('s6',step>=6);
+}
+
+/* ---------- steps ---------- */
+const stepsEl=$('#steps'), ind=$('#ind'), cap=$('#cap');
+let delayTimer=null, capTitleimer=null;
+function setCaption(){const s=STEPS[step];$('#capTitle').textContent=step+'. '+s[0];$('#capText').textContent=s[1];$('#capCode').textContent=s[2]}
+function setStep(n,instant){
+  n=Math.max(1,Math.min(6,n));instant=instant||reduce;const prev=step;if(n===prev)return;step=n;
+  closePop(true);sel=null;focusSet=null;hover=null;
+  clearTimeout(delayTimer);
+  const fresh=order.filter(o=>o.step>prev&&o.step<=n).sort((a,b)=>X(a)-X(b)||a.y-b.y);
+  order.forEach(o=>o.el.style.transitionDelay='0ms');edges.forEach(e=>e.el.style.transitionDelay='0ms');
+  if(!instant){
+    fresh.forEach((o,i)=>o.el.style.transitionDelay=Math.min(360,Math.round(26*i+6*Math.sqrt(i)))+'ms');
+    edges.forEach(e=>{if(e.step>prev&&e.step<=n)e.el.style.transitionDelay='200ms'});
+    delayTimer=setTimeout(()=>{order.forEach(o=>o.el.style.transitionDelay='');edges.forEach(e=>e.el.style.transitionDelay='')},900);
+  }
+  stepsEl.classList.toggle('instant',instant);ind.style.setProperty('--i',n-1);
+  stepsEl.querySelectorAll('button').forEach(b=>{if(+b.dataset.s===n)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current')});
+  clearTimeout(capTitleimer);cap.classList.toggle('instant',instant);
+  if(instant){cap.classList.remove('sw');setCaption()}
+  else{cap.classList.add('sw');capTitleimer=setTimeout(()=>{setCaption();cap.classList.remove('sw')},110)}
+  paint();
+}
+stepsEl.addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b)return;stopPlay();setStep(+b.dataset.s,ev.detail===0)});
+stepsEl.addEventListener('keydown',ev=>{
+  if(ev.key!=='ArrowRight'&&ev.key!=='ArrowLeft')return;ev.preventDefault();stopPlay();
+  setStep(step+(ev.key==='ArrowRight'?1:-1),true);stepsEl.querySelector('button[data-s="'+step+'"]').focus();
+});
+let playT=null;const playB=$('#play');
+function stopPlay(){if(playT){clearInterval(playT);playT=null;playB.textContent='Putar langkah 1–6'}}
+playB.addEventListener('click',()=>{
+  if(playT){stopPlay();return}
+  setStep(1,true);playB.textContent='Hentikan';
+  playT=setInterval(()=>{if(step>=6){stopPlay();return}setStep(step+1)},1500);
+});
+
+/* ---------- popover ---------- */
+function select(id,instant){
+  const wasOpen=pop.classList.contains('open');
+  if(sel===id&&wasOpen){closePop(instant);sel=null;focusSet=null;paint();return}
+  sel=id;focusSet=neighbors(id);paint();openPop(id,instant||wasOpen);
+}
+function propsOf(o){
+  const r=[];
+  if(o.t==='comp'){r.push(['domain',o.s]);r.push(['level',o.st==='planned'?'belum diajarkan':o.lv+' · '+LEVEL_COMP[o.lv]]);if(o.p.asOf)r.push(['asOf',fd(o.p.asOf)])}
+  else if(o.t==='sport'){r.push(['level',o.lv+' · '+LEVEL_SPORT[o.lv]]);r.push(['competitive',o.p.competitive]);if(o.p.asOf)r.push(['asOf',fd(o.p.asOf)])}
+  else if(o.t==='interest'){r.push(['score',o.lv+' · '+LEVEL_INTEREST[o.lv]]);if(o.p.asOf)r.push(['asOf',fd(o.p.asOf)])}
+  else if(o.t==='obs'){r.push(['date',fd(o.p.date)]);r.push(['source',o.p.source]);if(o.p.level)r.push(['level',o.p.level]);if(o.p.note)r.push(['note',o.p.note])}
+  else Object.keys(o.p).forEach(k=>r.push([k.toLowerCase(),k==='asOf'?fd(o.p[k]):o.p[k]]));
+  if(o.enjoy)r.push(['enjoyment',o.enjoy+' dari 4']);if(o.src)r.push(['source',o.src]);if(o.hours!=null&&o.st==='active'){r.push(['hoursPerWeek',o.hours]);r.push(['monthlyCost',rupiah(o.cost)])}
+  r.push(['status',STATUS_ID[o.st]]);return r;
+}
+const rupiah=n=>'Rp '+new Intl.NumberFormat('id-ID').format(n);
+function spark(o){
+  const h=o.hist,t0=+new Date(h[0][0]),t1=+new Date(h[h.length-1][0]),sp=(t1-t0)||1;
+  const pts=h.map(p=>[(8+220*((+new Date(p[0])-t0)/sp)).toFixed(1),(38-32*(p[1]/4)).toFixed(1)]);
+  return '<h4>Riwayat level</h4><svg class="spark" viewBox="0 0 236 44" width="100%" height="44" role="img" aria-label="Level dari '+h[0][1]+' ke '+h[h.length-1][1]+'"><polyline points="'+pts.map(p=>p.join(',')).join(' ')+'"/>'
+    +pts.map((p,i)=>'<circle cx="'+p[0]+'" cy="'+p[1]+'" r="'+(i===pts.length-1?3.5:2)+'"/>').join('')+'</svg>'
+    +'<div class="spark-l"><span>'+esc(fd(h[0][0]))+' · L'+h[0][1]+'</span><span>'+esc(fd(h[h.length-1][0]))+' · L'+h[h.length-1][1]+'</span></div>';
+}
+function openPop(id,instant){
+  const o=nodes[id],C=getComputedStyle(o.el).getPropertyValue('--c').trim();
+  let h='<div class="pop-h"><span class="tag">:'+LABEL[o.t]+'</span><button type="button" class="x" aria-label="Tutup">×</button></div><h3>'+esc(o.n)+'</h3><dl>';
+  propsOf(o).forEach(p=>h+='<dt>'+esc(p[0])+'</dt><dd>'+esc(p[1])+'</dd>');h+='</dl>';
+  const rel=[];
+  edges.forEach(e=>{if(e.step>step)return;const x=e.p&&e.p.min?' {min: '+e.p.min+'}':'';
+    if(e.f===id)rel.push('<li><code>'+e.rel+x+' →</code><button type="button" class="go" data-go="'+e.t+'">'+esc(nodes[e.t].n)+'</button></li>');
+    if(e.t===id)rel.push('<li><code>← '+e.rel+x+'</code><button type="button" class="go" data-go="'+e.f+'">'+esc(nodes[e.f].n)+'</button></li>')});
+  if(o.t==='comp')rel.push('<li><code>TAUGHT_IN →</code><button type="button" class="go" data-go="'+STAGE_OF[o.c]+'">'+esc(nodes[STAGE_OF[o.c]].n)+'</button></li>');
+  if(o.hist&&o.hist.length>1)h+=spark(o);
+  if(rel.length)h+='<h4>Relasi</h4><ul>'+rel.join('')+'</ul>';
+  h+='<pre id="popQuery">MATCH (n:'+LABEL[o.t]+" {id: '"+esc(id)+"'})-[r]-(m)\nRETURN n, type(r), m</pre><button type=\"button\" class=\"btn small\" data-copy=\"popQuery\">Salin query</button>";
+  pop.innerHTML=h;pop.style.setProperty('--c',C||'var(--ink)');
+  const r=rect(o),pw=272,ph=pop.offsetHeight,fw=STW*scale,fh=STH*scale;
+  const right=r.cx<760;let left=right?r.r*scale+10:r.l*scale-10-pw;left=Math.max(6,Math.min(fw-pw-6,left));
+  let top=Math.max(6,Math.min(fh-ph-6,r.cy*scale-48));
+  pop.style.left=left+'px';pop.style.top=top+'px';
+  pop.style.transformOrigin=(right?'0px ':'100% ')+Math.max(0,Math.min(ph,r.cy*scale-top))+'px';
+  pop.classList.toggle('instant',!!instant||reduce);
+  void pop.offsetWidth;pop.classList.add('open');
+}
+function closePop(instant){pop.classList.toggle('instant',!!instant||reduce);pop.classList.remove('open')}
+pop.addEventListener('click',ev=>{
+  ev.stopPropagation();
+  if(ev.target.closest('.x')){const id=sel;closePop(ev.detail===0);sel=null;focusSet=null;paint();if(id&&ev.detail===0)nodes[id].el.focus();return}
+  const g=ev.target.closest('[data-go]');
+  if(g){const id=g.dataset.go;if(nodes[id].step<=step){sel=id;focusSet=neighbors(id);paint();openPop(id,true)}}
+});
+scroller.addEventListener('click',()=>{if(sel||focusSet){closePop();sel=null;focusSet=null;paint()}});
+document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&(sel||focusSet)){const id=sel;closePop(true);sel=null;focusSet=null;paint();if(id&&pop.contains(document.activeElement))nodes[id].el.focus()}});
+
+/* ---------- copy ---------- */
+document.addEventListener('click',ev=>{
+  const b=ev.target.closest('[data-copy]');if(!b)return;
+  const t=document.getElementById(b.dataset.copy).textContent,old=b.dataset.old||b.textContent;b.dataset.old=old;
+  const done=m=>{b.textContent=m;setTimeout(()=>b.textContent=old,1500)};
+  try{navigator.clipboard.writeText(t).then(()=>done('Tersalin'),()=>done('Pilih teks, lalu salin'))}catch(e){done('Pilih teks, lalu salin')}
+});
+
+/* ---------- fit ---------- */
+function fit(){
+  scale=Math.max(.8,Math.min(1,scroller.clientWidth/STW));
+  stage.style.transform='scale('+scale+')';stage.style.height=STH+'px';
+  fitEl.style.width=Math.ceil(STW*scale)+'px';fitEl.style.height=Math.ceil(STH*scale)+'px';
+  if(sel&&pop.classList.contains('open'))openPop(sel,true);
+}
+new ResizeObserver(fit).observe(scroller);
+
+/* ---------- saran (aturan lokal sebagai pengganti AI) ---------- */
+function parents(id){return edges.filter(e=>e.rel==='PREREQUISITE_OF'&&e.t===id).map(e=>nodes[e.f])}
+function proxy(k){ if(k.st!=='planned'&&k.lv>0)return{lvl:k.lv,via:k};
+  let best=null;parents(k.id).forEach(p=>{const r=proxy(p);if(r&&(!best||r.lvl<best.lvl))best=r});return best||{lvl:0,via:k}}
+function chain(a,b){ if(a===b)return[nodes[a]];
+  const q=[[a]];while(q.length){const p=q.shift(),last=p[p.length-1];
+    for(const e of edges){if(e.rel==='PREREQUISITE_OF'&&e.f===last){const np=p.concat(e.t);if(e.t===b)return np.map(x=>nodes[x]);q.push(np)}}}
+  return[nodes[a],nodes[b]]}
+function lastObs(id){let best=null;edges.forEach(e=>{if(e.t===id&&nodes[e.f].t==='obs'){const o=nodes[e.f];if(!best||o.p.date>best.p.date)best=o}});return best}
+function fitOf(j){
+  const reqs=edges.filter(e=>e.rel==='REQUIRED_FOR'&&e.t===j.id);
+  const siap=reqs.reduce((s,e)=>s+Math.min(1,proxy(nodes[e.f]).lvl/e.p.min),0)/(reqs.length||1);
+  let minat=0;edges.forEach(e=>{if(e.rel==='ALIGNS_WITH'&&e.t===j.id)minat=Math.max(minat,nodes[e.f].lv/4)});
+  return{siap,minat};
+}
+function compute(){
+  const out=[],gaps={},jur=order.filter(o=>o.t==='major');
+  jur.forEach(j=>edges.forEach(e=>{if(e.rel!=='REQUIRED_FOR'||e.t!==j.id)return;const pr=proxy(nodes[e.f]);
+    if(pr.lvl<e.p.min){const g=gaps[pr.via.id]||(gaps[pr.via.id]={via:pr.via,items:[]});g.items.push({req:nodes[e.f],j,min:e.p.min})}}));
+  Object.keys(gaps).forEach(k=>{const g=gaps[k],it=g.items[0],v=g.via,ob=lastObs(v.id),path=chain(v.id,it.req.id).concat(it.j);
+    out.push({pr:1,prL:'Tinggi',title:'Perkuat '+v.n,
+      why:v.n+' sekarang di level '+v.lv+' ('+LEVEL_COMP[v.lv]+'). '+it.j.n+' meminta '+it.req.n+' minimal level '+it.min+(v===it.req?'.':', dan '+v.n+' adalah prasyaratnya.'),
+      path,ev:ob,targets:[v.id]})});
+  order.filter(o=>o.t==='interest'&&o.lv>=3).forEach(m=>{
+    const acts=edges.filter(e=>e.rel==='CHANNELED_INTO'&&e.f===m.id).map(e=>nodes[e.t]);
+    if(acts.some(a=>a.st!=='done'))return;
+    const j=edges.filter(e=>e.rel==='ALIGNS_WITH'&&e.f===m.id).map(e=>nodes[e.t])[0],last=acts[acts.length-1];
+    out.push({pr:2,prL:'Sedang',title:'Cari wadah baru untuk minat '+m.n.toLowerCase(),
+      why:'Minat ini masih '+LEVEL_INTEREST[m.lv].toLowerCase()+(last?', tetapi kegiatan terakhirnya, '+last.n+', sudah selesai':', tetapi belum punya kegiatan')+'.'+(j?' Jurusan '+j.n+' selaras dengan minat ini.':''),
+      path:j?[m,j]:[m],ev:lastObs(m.id),targets:[m.id],adds:true})});
+  order.filter(o=>o.t==='activity'&&o.st==='active').forEach(a=>{
+    const nx=edges.filter(e=>e.rel==='PREPARES_FOR'&&e.f===a.id).map(e=>nodes[e.t])[0];if(!nx||nx.st!=='planned')return;
+    const af=edges.filter(e=>e.rel==='PREPARES_FOR'&&e.f===nx.id).map(e=>nodes[e.t])[0];
+    out.push({pr:3,prL:'Lanjutan',title:'Mulai cicil '+nx.n.toLowerCase(),
+      why:a.n+' sedang berjalan. '+nx.n+' adalah langkah berikutnya'+(af?' menuju '+af.n:'')+', dan bisa dimulai dari proyek kecil sekarang.',
+      path:af?[a,nx,af]:[a,nx],ev:null,targets:[nx.id]})});
+  const sp=order.filter(o=>o.t==='sport'&&o.st==='active'&&o.lv>=3&&/^ya/.test(o.p.competitive||'')).sort((a,b)=>b.lv-a.lv)[0];
+  if(sp)out.push({pr:2,prL:'Sedang',title:'Uji bakat '+sp.n.toLowerCase()+' lewat lomba',
+    why:sp.n+' sudah di level '+sp.lv+' ('+LEVEL_SPORT[sp.lv]+') dan belum ada lomba yang tercatat. O2SN adalah salah satu jalur lomba olahraga siswa.',
+    path:[sp],ev:lastObs(sp.id),targets:[sp.id]});
+  const L=loadState();
+  if(L.total>L.cap){for(let i=out.length-1;i>=0;i--)if(out[i].adds)out.splice(i,1);
+    out.push({pr:1,prL:'Tinggi',title:'Kurangi beban mingguan',why:'Kegiatan aktif memakai '+L.total+' jam per minggu, di atas batas '+L.cap+' jam. Saran yang menambah kegiatan ditahan dulu.',path:L.acts,ev:null,targets:L.acts.map(o=>o.id)})}
+  else out.forEach(x=>{if(x.adds)x.why+=' Sisa waktu '+L.left+' jam per minggu.'});
+  return out.sort((a,b)=>a.pr-b.pr);
+}
+const suggestionEl=$('#suggestions'), majorRows=$('#majorRows'), talentEl=$('#talents');
+let talentSets={};
+function ageYears(d){return Math.max(0,(Date.now()-new Date(d+'T00:00:00'))/31557600000)}
+function weightOf(o){return(SRC_WEIGHT[o.src]||.5)*Math.pow(.5,ageYears(o.p.asOf||'2023-01-01')/HALF_LIFE)}
+function renderTalents(){
+  const rows=Object.keys(DOM).map(d=>{const ev=order.filter(o=>o.dom===d&&(o.ev||(o.st!=='planned'&&o.lv>0)));
+    let w=0,a=0,ew=0,e=0,up=0;
+    ev.forEach(o=>{const k=weightOf(o);w+=k;a+=k*(o.ev||o.lv)/4;if(o.enjoy){ew+=k;e+=k*o.enjoy/4}
+      const h=o.hist||[];if(h.length>1&&h[h.length-1][1]>h[h.length-2][1]&&ageYears(h[h.length-1][0])<1.5)up++});
+    const ab=w?a/w:0,en=ew?e/ew:0;return{d,ev,ab,en,up,sig:Math.sqrt(ab*en)}}).sort((x,y)=>y.sig-x.sig);
+  if(!talentEl.children.length)rows.forEach(()=>{const r=document.createElement('div');r.className='major-row bk';r.tabIndex=0;
+    r.innerHTML='<strong></strong><div class="meter"><span>Kemampuan</span><div class="track"><i class="k"></i></div><b></b></div><div class="meter"><span>Kesenangan</span><div class="track"><i class="m"></i></div><b></b></div>';talentEl.appendChild(r)});
+  talentSets={};
+  rows.forEach((r,i)=>{const el=talentEl.children[i],bars=el.querySelectorAll('.track i'),nums=el.querySelectorAll('b');el.dataset.d=r.d;talentSets[r.d]=new Set(r.ev.map(o=>o.id));
+    el.firstChild.textContent=DOM[r.d]+' · '+r.ev.length+' bukti'+(r.up?' · '+r.up+' sedang naik':'');
+    bars[0].style.setProperty('--v',r.ab);bars[1].style.setProperty('--v',r.en);nums[0].textContent=Math.round(r.ab*100)+'%';nums[1].textContent=Math.round(r.en*100)+'%'});
+}
+/* weekly load */
+function loadState(){const acts=order.filter(o=>o.hours!=null&&o.st==='active'),total=acts.reduce((s,o)=>s+o.hours,0),cap=Math.max(1,+$('#capHours').value||12);
+  return{acts,total,cap,left:cap-total,cost:acts.reduce((s,o)=>s+o.cost,0)}}
+function renderLoad(){const L=loadState(),bar=$('#loadBar');
+  bar.style.setProperty('--v',Math.min(1,L.total/L.cap));bar.classList.toggle('over',L.total>L.cap);
+  $('#loadPct').textContent=Math.round(100*L.total/L.cap)+'%';
+  $('#loadTxt').textContent=L.total+' dari '+L.cap+' jam terpakai, '+(L.left>=0?'sisa '+L.left+' jam':'lebih '+(-L.left)+' jam')+'. Biaya '+rupiah(L.cost)+' per bulan.';
+  $('#loadBody').innerHTML=L.acts.map(o=>'<tr><td>'+esc(o.n)+'</td><td class="num">'+o.hours+'</td><td class="num">'+rupiah(o.cost)+'</td></tr>').join('')}
+$('#capHours').addEventListener('input',()=>renderSuggestions());
+talentEl.addEventListener('pointerover',ev=>{const r=ev.target.closest('.bk');if(r&&ev.pointerType==='mouse'){hover=talentSets[r.dataset.d];paint()}});
+talentEl.addEventListener('pointerout',ev=>{if(ev.target.closest('.bk')&&hover){hover=null;paint()}});
+talentEl.addEventListener('click',ev=>{const r=ev.target.closest('.bk');if(!r)return;if(step<3)setStep(6,true);closePop(true);sel=null;hover=null;focusSet=talentSets[r.dataset.d];paint();showGraph()});
+talentEl.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();ev.target.click()}});
+function renderSuggestions(){
+  renderTalents();renderLoad();suggestions=compute();aiTargets=new Set();suggestions.forEach(s=>s.targets.forEach(t=>aiTargets.add(t)));
+  if(!majorRows.children.length){
+    order.filter(o=>o.t==='major').forEach(j=>{const d=document.createElement('div');d.className='major-row';d.dataset.j=j.id;
+      d.innerHTML='<strong>'+esc(j.n)+'</strong><div class="meter"><span>Kesiapan akademik</span><div class="track"><i></i></div><b class="a"></b></div><div class="meter"><span>Kecocokan minat</span><div class="track"><i class="m"></i></div><b class="b"></b></div>';
+      majorRows.appendChild(d)});
+  }
+  majorRows.querySelectorAll('.major-row').forEach(d=>{const f=fitOf(nodes[d.dataset.j]),bars=d.querySelectorAll('.track i');
+    bars[0].style.setProperty('--v',f.siap);bars[1].style.setProperty('--v',f.minat);
+    d.querySelector('.a').textContent=Math.round(f.siap*100)+'%';d.querySelector('.b').textContent=Math.round(f.minat*100)+'%'});
+  suggestionEl.innerHTML='';
+  if(!suggestions.length){suggestionEl.innerHTML='<li class="empty">Tidak ada celah pada jalur saat ini. Saran baru muncul begitu ada input yang mengubah gambaran.</li>';return}
+  suggestions.forEach((s,i)=>{
+    const li=document.createElement('li'),b=document.createElement('button');b.type='button';b.className='sr';b.dataset.i=i;
+    b.innerHTML='<span class="sr-h"><span class="pr p'+s.pr+'">'+s.prL+'</span><strong>'+esc(s.title)+'</strong></span><p>'+esc(s.why)+'</p>'
+      +'<span class="path">'+s.path.map(n=>'<span>'+esc(n.n)+'</span>').join('<em>→</em>')+'</span>'
+      +'<small>'+(s.ev?'Bukti: '+esc(s.ev.n)+', '+esc(fd(s.ev.p.date)):'Bukti: struktur graf (belum ada observasi terkait)')+' · Tunjukkan di graf</small>';
+    li.appendChild(b);suggestionEl.appendChild(li);
+  });
+}
+function suggestionSet(s){const x=new Set(s.targets);s.path.forEach(n=>x.add(n.id));if(s.ev)x.add(s.ev.id);return x}
+suggestionEl.addEventListener('pointerover',ev=>{const b=ev.target.closest('.sr');if(b&&ev.pointerType==='mouse'){hover=suggestionSet(suggestions[+b.dataset.i]);paint()}});
+suggestionEl.addEventListener('pointerout',ev=>{if(ev.target.closest('.sr')&&hover){hover=null;paint()}});
+suggestionEl.addEventListener('click',ev=>{const b=ev.target.closest('.sr');if(!b)return;
+  if(step<6)setStep(6,true);closePop(true);sel=null;hover=null;focusSet=suggestionSet(suggestions[+b.dataset.i]);paint();showGraph()});
+function showGraph(){scroller.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'})}
+
+/* ---------- form ---------- */
+const fSubject=$('#fSubject'), fSrc=$('#fSrc'), fNote=$('#fNote'), form=$('#f');
+function fillAbout(){
+  const g=(l,t)=>'<optgroup label="'+l+'">'+order.filter(o=>o.t===t&&o.st!=='planned').map(o=>'<option value="'+o.id+'"'+(o.id==='algebra'?' selected':'')+'>'+esc(o.n)+'</option>').join('')+'</optgroup>';
+  fSubject.innerHTML=g('Kompetensi','comp')+g('Minat','interest')+g('Olahraga','sport');
+}
+function today(){const d=new Date(),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())}
+function formVal(){return{src:fSrc.value,about:nodes[fSubject.value],lv:+form.querySelector('input[name=lv]:checked').value,enjoy:+form.querySelector('input[name=en]:checked').value,note:fNote.value.trim(),day:today()}}
+function cy(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
+const META={comp:['Competency','MEASURES','MASTERS','level',LEVEL_COMP],interest:['Interest','REVEALS','INTERESTED_IN','score',LEVEL_INTEREST],sport:['Sport','MEASURES','PRACTICES','level',LEVEL_SPORT]};
+function preview(){
+  const v=formVal(),m=META[v.about.t];
+  $('#lvHint').textContent='Level '+v.lv+': '+m[4][v.lv];
+  $('#fQuery').textContent="MATCH (a:Child {id: 'raka'}), (t:"+m[0]+" {id: '"+v.about.id+"'})\n"
+   +"CREATE (o:Observation {id: $id, date: date('"+v.day+"'),\n  source: '"+cy(v.src)+"', level: "+v.lv+(v.enjoy?", enjoyment: "+v.enjoy:'')+(v.note?", note: '"+cy(v.note)+"'":'')+"})\n"
+   +"CREATE (o)-[:ABOUT]->(a)\nCREATE (o)-[:"+m[1]+"]->(t)\n"
+   +"MERGE (a)-[m:"+m[2]+"]->(t)\nSET m."+m[3]+" = "+v.lv+(v.enjoy?", m.enjoyment = "+v.enjoy:'')+", m.asOf = date('"+v.day+"')";
+}
+form.addEventListener('input',preview);form.addEventListener('change',preview);
+let seq=0, lastAdded=null, toastT=null;
+form.addEventListener('submit',ev=>{
+  ev.preventDefault();stopPlay();const v=formVal(),t=v.about;
+  if(step<6)setStep(6,true);
+  if(added.length>=4){const old=added.shift();for(let i=edges.length-1;i>=0;i--)if(edges[i].f===old.id)edges.splice(i,1);
+    old.wrap.remove();order.splice(order.indexOf(old),1);delete nodes[old.id]}
+  const id='in'+(++seq),o=add(id,'obs','D',0,v.src,fd(v.day)+' · L'+v.lv,'done',4,null,{date:v.day,source:v.src,level:String(v.lv),note:v.note});
+  added.push(o);mkNode(o);added.forEach((a,i)=>{a.y=Y.obs+58*(i+1);place(a)});
+  link(id,t.id,META[t.t][1],'amber',4,'side');edges[edges.length-1].off=6+(seq%3)*5;
+  t.lv=v.lv;t.p.asOf=v.day;if(v.enjoy)t.enjoy=v.enjoy;t.src=SRC_OF[v.src]||'parent';(t.hist||(t.hist=[])).push([v.day,v.lv]);paintLevel(t);
+  STH=692+58*added.length;fit();drawEdges();renderSuggestions();
+  closePop(true);sel=null;hover=null;lastAdded=new Set([id,t.id]);focusSet=null;paint();
+  fNote.value='';preview();
+  $('#toastT').textContent='Observasi masuk ke graf, '+t.n+' sekarang level '+v.lv+'.';
+  const T=$('#toast');T.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>T.classList.remove('show'),6000);
+});
+$('#toastB').addEventListener('click',()=>{$('#toast').classList.remove('show');if(lastAdded){focusSet=lastAdded;paint()}showGraph()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)clearTimeout(toastT);else if($('#toast').classList.contains('show'))toastT=setTimeout(()=>$('#toast').classList.remove('show'),4000)});
+
+/* ---------- arsip lomba (contoh) ---------- */
+const ARCHIVE={
+ 2025:[['Juknis','Petunjuk teknis OSN 2025','Semua','Batas usia dan jadwal ada di halaman awal'],['Soal','Soal seleksi kabupaten/kota 2025','Lokal',''],['Soal','Soal seleksi provinsi 2025','Provinsi','Belum dicoba']],
+ 2026:[['Juknis','Petunjuk teknis OSN 2026','Semua',''],['Kisi-kisi','Kisi-kisi Informatika 2026','Semua','Bandingkan dengan soal 2025'],['Soal','Soal seleksi kabupaten/kota 2026','Lokal',''],['Catatan','Rangkuman topik yang sering keluar','Lokal','Ditulis setelah membahas soal 2025 dan 2026']]
+};
+const archiveBody=$('#archiveBody');let archiveTimer=null;
+function fillArchive(y){archiveBody.innerHTML=ARCHIVE[y].map(r=>'<tr>'+r.map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>').join('')}
+document.querySelector('.years').addEventListener('click',ev=>{const b=ev.target.closest('[data-y]');if(!b)return;
+  document.querySelectorAll('.years .btn').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  clearTimeout(archiveTimer);if(reduce||ev.detail===0){fillArchive(b.dataset.y);return}
+  archiveBody.classList.add('sw');archiveTimer=setTimeout(()=>{fillArchive(b.dataset.y);archiveBody.classList.remove('sw')},110)});
+fillArchive(2026);
+
+/* ---------- competition calendar (sample) ---------- */
+const CAL=[['O2SN Renang','Babak lokal','2027-01-20','2027-02-08',0],['Kompetisi robotik pelajar','Babak lokal','2027-02-15','2027-03-06',2],['Lomba poster','Tingkat kota','2027-04-05','2027-04-26',1]];
+const mon=new Intl.DateTimeFormat('id-ID',{month:'short'});
+$('#cal').innerHTML=CAL.map(c=>{const d=new Date(c[3]+'T00:00:00'),left=Math.ceil((new Date(c[2]+'T00:00:00')-Date.now())/864e5);
+  return '<li><span class="d"><b>'+d.getDate()+'</b>'+esc(mon.format(d))+' '+d.getFullYear()+'</span><span><strong>'+esc(c[0])+' · '+esc(c[1])+'</strong><small>Tutup daftar '+esc(fd(c[2]))+', '+(left>=0?left+' hari lagi':'sudah lewat')+' · '+(c[4]?c[4]+' dokumen arsip':'belum ada arsip')+'</small></span></li>'}).join('');
+
+/* ---------- school comparison (sample) ---------- */
+const SCHOOLS=[['SMA Negeri','Nasional',0,4,3],['SMA Swasta','Nasional',1500000,7,3],['SMA Internasional','Cambridge',6000000,12,4]];
+function renderSchools(){
+  const w=[+$('#wCost').value,+$('#wDist').value,+$('#wFit').value],sum=(w[0]+w[1]+w[2])||1,mc=Math.max(...SCHOOLS.map(x=>x[2]))||1,md=Math.max(...SCHOOLS.map(x=>x[3]))||1;
+  const rows=SCHOOLS.map(x=>({x,sc:(w[0]*(1-x[2]/mc)+w[1]*(1-x[3]/md)+w[2]*x[4]/4)/sum})).sort((a,b)=>b.sc-a.sc);
+  $('#schoolBody').innerHTML=rows.map((r,i)=>'<tr><td>'+esc(r.x[0])+(i===0?' <span class="pr p1">Teratas</span>':'')+'</td><td>'+esc(r.x[1])+'</td><td class="num">'+rupiah(r.x[2])+'</td><td class="num">'+r.x[3]+' km</td><td class="num">'+r.x[4]+'</td><td class="num"><b>'+Math.round(r.sc*100)+'</b></td></tr>').join('')}
+['wCost','wDist','wFit'].forEach(id=>$('#'+id).addEventListener('input',renderSchools));renderSchools();
+
+/* ---------- init ---------- */
+fillAbout();preview();setCaption();
+stepsEl.querySelector('button[data-s="6"]').setAttribute('aria-current','step');
+fit();drawEdges();renderSuggestions();paint();
+if(scroller.scrollWidth>scroller.clientWidth)scroller.scrollLeft=Math.max(0,COL.D*scale-scroller.clientWidth/2);
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{drawEdges();paint()});
+})();
+</script>
+</body>
+</html>

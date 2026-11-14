@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Onboarding Peta Pendidikan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: the wizard on the left, what each answer becomes in the graph on the right. */
+:root{
+  --bg:#f2f4f3; --surface:#ffffff; --band:#e9edeb; --ink:#17232b; --muted:#5d6b73; --line:#d3dad7;
+  --accent:#d9482b; --c-green:#1c7548; --c-violet:#5b43c4; --c-blue:#2460a7;
+  --shadow:0 1px 2px rgba(23,35,43,.06),0 12px 32px -8px rgba(23,35,43,.22);
+  --f-display:"Bricolage Grotesque","Instrument Sans",system-ui,sans-serif;
+  --f-body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --ease-out:cubic-bezier(0.23,1,0.32,1); --ease-in-out:cubic-bezier(0.77,0,0.175,1);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){color-scheme:dark;
+    --bg:#11161a; --surface:#1a2127; --band:#161c21; --ink:#e7edf0; --muted:#94a2ab; --line:#2d383f;
+    --accent:#ff7a55; --c-green:#63c796; --c-violet:#a898f2; --c-blue:#74abea;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 14px 36px -8px rgba(0,0,0,.7);}
+}
+:root[data-theme="dark"]{color-scheme:dark;
+  --bg:#11161a; --surface:#1a2127; --band:#161c21; --ink:#e7edf0; --muted:#94a2ab; --line:#2d383f;
+  --accent:#ff7a55; --c-green:#63c796; --c-violet:#a898f2; --c-blue:#74abea;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 14px 36px -8px rgba(0,0,0,.7);}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.55 var(--f-body)}
+button,input,select{font:inherit;color:inherit}
+a{color:inherit;text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.page{max-width:1180px;margin:0 auto;padding:28px 24px 72px;display:flex;flex-direction:column;gap:32px}
+@media (max-width:520px){.page{padding:20px 16px 56px}}
+h1{font:700 clamp(28px,4vw,38px)/1.08 var(--f-display);letter-spacing:-.02em;margin:0;text-wrap:balance}
+h2{font:700 22px/1.2 var(--f-display);letter-spacing:-.015em;margin:0;text-wrap:balance}
+h3{font:600 15px/1.3 var(--f-body);margin:0}
+p{margin:0}
+.lead{max-width:65ch;color:var(--muted);font-size:16px}
+.top{display:flex;flex-direction:column;gap:10px}
+.chip{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;padding:5px 11px;border:1px solid var(--line);border-radius:999px;background:var(--surface);font-size:13px}
+.chip i{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
+code,pre{font-family:var(--f-mono);font-size:12.5px}
+pre{margin:0;padding:12px 14px;border-radius:10px;background:var(--band);border:1px solid var(--line);overflow-x:auto;line-height:1.55;white-space:pre}
+
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:9px 15px;font-weight:600;font-size:14px;cursor:pointer;transition:transform 160ms var(--ease-out),background-color 150ms ease,border-color 150ms ease}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.btn.small{padding:5px 10px;font-size:12.5px;border-radius:7px}
+.btn[disabled]{opacity:.5;cursor:default}
+@media (hover:hover) and (pointer:fine){
+  .btn:hover{border-color:var(--muted)}
+  .btn.primary:hover{background:color-mix(in oklab,var(--ink) 86%,var(--bg))}
+  .btn.ghost:hover{color:var(--ink);border-color:transparent;background:var(--band)}
+}
+
+/* wizard */
+.wiz{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:900px){.wiz{grid-template-columns:minmax(0,1fr)}}
+.card{border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:22px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.prog{display:flex;flex-direction:column;gap:8px}
+.prog-top{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.track{height:6px;border-radius:3px;background:var(--band);overflow:hidden}
+.track i{display:block;height:100%;border-radius:3px;background:var(--ink);transform-origin:0 50%;transform:scaleX(var(--v,0));transition:transform 320ms var(--ease-in-out)}
+.track i.g{background:var(--c-green)}
+.nav{display:flex;flex-wrap:wrap;gap:4px;list-style:none;margin:0;padding:0}
+.nav button{border:0;background:none;padding:3px 8px;border-radius:6px;font-size:12.5px;font-weight:600;color:var(--muted);cursor:default;transition:background-color 150ms ease,color 150ms ease}
+.nav button.seen{cursor:pointer;color:var(--ink)}
+.nav button[aria-current="step"]{background:var(--ink);color:var(--bg)}
+.step{display:flex;flex-direction:column;gap:14px;min-height:300px;transition:opacity 220ms var(--ease-out),transform 220ms var(--ease-out)}
+.step.out{opacity:0;transform:translateX(calc(var(--dir,1)*-8px));transition-duration:110ms}
+.step.pre{opacity:0;transform:translateX(calc(var(--dir,1)*8px));transition:none}
+.step.instant{transition:none}
+.step > p{color:var(--muted);max-width:60ch}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.fld{display:flex;flex-direction:column;gap:5px;min-width:0}
+.fld > label,legend,.lbl{font-size:12.5px;font-weight:600;color:var(--muted);padding:0}
+input[type=text],input[type=email],input[type=password],input[type=date],input[type=number],select{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--bg)}
+fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:5px;min-width:0}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label{display:block;text-align:center;padding:7px 6px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap;transition:transform 160ms var(--ease-out),background-color 150ms ease,color 150ms ease,border-color 150ms ease}
+.seg label:active{transform:scale(.97)}
+.seg input:checked + label{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.seg input:focus-visible + label{outline:2px solid var(--accent);outline-offset:2px}
+.seg.wrap{grid-auto-flow:row;grid-template-columns:repeat(auto-fit,minmax(110px,1fr))}
+.hint{font-size:12.5px;color:var(--muted)}
+.note{padding:10px 12px;border-radius:10px;background:var(--band);font-size:13.5px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:6px 12px;font-size:13.5px;font-weight:600;cursor:pointer;transition:transform 160ms var(--ease-out),background-color 150ms ease,color 150ms ease,border-color 150ms ease}
+.chips button:active{transform:scale(.97)}
+.chips button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.addrow{display:flex;gap:6px;max-width:340px}
+.item{display:grid;grid-template-columns:minmax(90px,.8fr) minmax(0,1.3fr) minmax(0,1.3fr) 84px;gap:8px;align-items:end;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.item.two{grid-template-columns:minmax(90px,.8fr) minmax(0,2fr)}
+.item strong{align-self:center;font-size:14px;overflow-wrap:anywhere}
+@media (max-width:640px){.item,.item.two{grid-template-columns:minmax(0,1fr)}}
+.comp{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);align-items:end}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px}
+.check input{margin-top:4px;accent-color:var(--ink);width:16px;height:16px;flex-shrink:0}
+.err{color:var(--accent);font-size:13.5px;font-weight:600;min-height:20px}
+.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.actions .sp{flex:1}
+dl.sum{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 16px;margin:0;font-size:14px}
+dl.sum dt{color:var(--muted)} dl.sum dd{margin:0;overflow-wrap:anywhere}
+ul.todo{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:3px;font-size:14px}
+
+/* aside */
+.aside{position:sticky;top:16px}
+@media (max-width:900px){.aside{position:static}}
+.big{font:700 34px/1 var(--f-display);font-variant-numeric:tabular-nums}
+.writes{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+.writes li{display:flex;justify-content:space-between;gap:10px;align-items:baseline;font:500 12px/1.4 var(--f-mono);padding:5px 8px;border-radius:7px;background:var(--band);transition:opacity 300ms var(--ease-out),transform 300ms var(--ease-out)}
+@starting-style{.writes li{opacity:0;transform:translateY(6px)}}
+.writes li span{overflow-wrap:anywhere}
+.writes li b{font-variant-numeric:tabular-nums;color:var(--c-violet)}
+.writes li.node b{color:var(--c-blue)}
+.empty{font-size:13.5px;color:var(--muted)}
+
+/* concept */
+.concept{display:flex;flex-direction:column;gap:32px}
+.live .concept,.live .demo-only{display:none}
+section.ref{display:flex;flex-direction:column;gap:14px;min-width:0}
+section.ref > p{max-width:68ch;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;list-style:none;margin:0;padding:0;counter-reset:g}
+.grid li{counter-increment:g;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:12px 14px;font-size:13.5px;color:var(--muted)}
+.grid li::before{content:counter(g);display:block;font:500 12px var(--f-mono);color:var(--c-violet)}
+.grid h3{color:var(--ink);font-size:14.5px;margin:2px 0 4px}
+.tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:620px;font-size:13.5px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;font-weight:600;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600;white-space:nowrap}
+td code{font-size:12px}
+ul.plain,ol.plain{margin:0;padding-left:22px;max-width:74ch;display:flex;flex-direction:column;gap:6px}
+ol.plain li::marker{font:500 13px var(--f-mono);color:var(--muted)}
+@media (prefers-reduced-motion:reduce){
+  .btn:active,.seg label:active,.chips button:active{transform:none}
+  .step.out,.step.pre{transform:none}
+  .track i{transition:none}
+  .writes li{transform:none}
+}
+</style>
+</head>
+<body>
+<main class="page">
+  <header class="top">
+    <h1>Onboarding Peta Pendidikan</h1>
+    <p class="lead">Setelah sistem terpasang, wizard ini mengubah beberapa jawaban Anda menjadi graf awal seorang anak. Tiga langkah pertama wajib, sisanya boleh dilewati dan dilengkapi kapan saja.</p>
+    <span class="chip demo-only"><i></i>Mode contoh: jawaban hanya tersimpan di browser ini, tidak dikirim ke server</span>
+  </header>
+
+  <section class="wiz" aria-label="Wizard onboarding">
+    <form class="card" id="wf" novalidate autocomplete="off">
+      <div class="prog">
+        <div class="prog-top"><span id="progTxt"></span><span id="progOpt"></span></div>
+        <div class="track"><i id="progBar"></i></div>
+        <ol class="nav" id="nav"></ol>
+      </div>
+      <div class="step" id="step"></div>
+      <div class="err" id="err" role="alert"></div>
+      <div class="actions">
+        <button type="button" class="btn" id="back">Kembali</button>
+        <span class="sp"></span>
+        <button type="button" class="btn ghost" id="skip">Lewati dulu</button>
+        <button type="submit" class="btn primary" id="next">Lanjut</button>
+      </div>
+    </form>
+
+    <aside class="card aside" aria-label="Hasil di graf">
+      <div>
+        <span class="lbl">Kelengkapan profil</span>
+        <div class="big" id="pct">0%</div>
+      </div>
+      <div class="track"><i class="g" id="pctBar"></i></div>
+      <h3>Yang akan ditulis ke graf</h3>
+      <ul class="writes" id="writes"></ul>
+      <p class="empty" id="writesEmpty">Belum ada. Isi langkah pertama untuk melihat node dan relasi yang terbentuk.</p>
+      <span class="hint">Tidak ada yang ditulis sebelum Anda menekan Selesai di langkah terakhir.</span>
+    </aside>
+  </section>
+
+  <div class="concept">
+    <section class="ref">
+      <h2>Prinsip rancangan</h2>
+      <ol class="grid">
+        <li><h3>Tiga menit sampai berguna</h3>Hanya nama panggilan, tanggal lahir, dan posisi sekolah yang wajib. Dengan itu jalur tahap sudah terbentuk dan graf bisa dibuka.</li>
+        <li><h3>Umur menentukan cabang</h3>Tanggal lahir menghasilkan tebakan jenjang dan kelas. Langkah yang tidak relevan untuk umur itu disembunyikan.</li>
+        <li><h3>Tidak tahu bukan nol</h3>Yang tidak dijawab tidak ditulis. Tahap yang sudah lewat ditandai selesai tanpa level, bukan level rendah.</li>
+        <li><h3>Jawaban awal berbobot rendah</h3>Perkiraan orang tua disimpan dengan <code>source: 'onboarding'</code> dan bobot 0,4, sehingga rapor dan hasil lomba nanti menggesernya.</li>
+        <li><h3>Bisa berhenti dan lanjut</h3>Draf tersimpan di setiap perubahan. Graf baru ditulis saat konfirmasi, dalam satu transaksi, jadi tidak ada anak setengah jadi.</li>
+        <li><h3>Hasilnya terlihat sejak awal</h3>Panel kanan menunjukkan node dan relasi dari setiap jawaban, supaya tidak ada data yang muncul tanpa Anda tahu asalnya.</li>
+      </ol>
+    </section>
+
+    <section class="ref">
+      <h2>Cabang menurut umur</h2>
+      <p>Kelas yang disarankan dihitung dari umur pada 1 Juli tahun ajaran berjalan: umur 7 berarti kelas 1. Ini hanya nilai awal, karena anak bisa masuk lebih cepat, akselerasi, atau mengulang.</p>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Kelompok</th><th>Langkah yang muncul</th><th>Yang disembunyikan</th><th>Fokus graf awal</th></tr></thead>
+        <tbody>
+          <tr><td>Pra-sekolah</td><td>Anak, posisi, minat dan olahraga, batas jam</td><td>Sekolah, kemampuan, lomba, jurusan</td><td>Minat dan kesenangan. Belum ada level akademik.</td></tr>
+          <tr><td>SD</td><td>Ditambah sekolah, gambaran kemampuan, lomba</td><td>Jurusan</td><td>Fondasi dan eksplorasi kegiatan.</td></tr>
+          <tr><td>SMP</td><td>Semua langkah</td><td>Tidak ada</td><td>Celah prasyarat, lomba berjenjang, arah jurusan mulai ditanya.</td></tr>
+          <tr><td>SMA</td><td>Semua langkah</td><td>Tidak ada</td><td>Kesiapan menuju jurusan tujuan.</td></tr>
+          <tr><td>Kuliah</td><td>Anak, posisi, kampus, minat, tujuan</td><td>Kemampuan per tahap sekolah</td><td>Riwayat ringkas saja.</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section class="ref">
+      <h2>Dari jawaban ke graf</h2>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Langkah</th><th>Yang ditulis</th><th>Catatan</th></tr></thead>
+        <tbody>
+          <tr><td>Akun</td><td><code>User</code></td><td>Sekali per instalasi. Kata sandi disimpan sebagai hash.</td></tr>
+          <tr><td>Anak</td><td><code>Child</code>, <code>(User)-[:GUARDIAN_OF]-&gt;(Child)</code></td><td>Wajib. Hanya nama panggilan, bukan nama lengkap.</td></tr>
+          <tr><td>Posisi</td><td><code>(Child)-[:ENROLLED_IN {status}]-&gt;(Stage)</code></td><td>Wajib. Tahap sekarang <code>active</code>, tahap sebelumnya <code>done</code>.</td></tr>
+          <tr><td>Sekolah</td><td><code>School</code>, <code>USES</code> ke <code>Curriculum</code>, <code>ATTENDS</code></td><td>Jenis: <code>public</code>, <code>private</code>, <code>international</code>.</td></tr>
+          <tr><td>Kemampuan</td><td><code>MASTERS {level, enjoyment}</code> dan satu <code>Observation</code> per bidang</td><td>Menempel pada kompetensi di tahap sekarang. Bobot 0,4.</td></tr>
+          <tr><td>Minat</td><td><code>Interest</code>, <code>INTERESTED_IN {score}</code></td><td>Entri baru dibuat bila belum ada.</td></tr>
+          <tr><td>Olahraga</td><td><code>PRACTICES {level, enjoyment, hoursPerWeek}</code></td><td>Olahraga di luar katalog ditandai <code>custom</code> untuk ditinjau.</td></tr>
+          <tr><td>Metode</td><td><code>LEARNS_WITH</code> ke <code>Method</code></td><td>Sempoa dan sejenisnya.</td></tr>
+          <tr><td>Lomba</td><td><code>Competition</code>, <code>CompetitionEdition</code>, <code>Round</code>, <code>PARTICIPATES_IN {result}</code></td><td>Babak tertinggi yang dicapai.</td></tr>
+          <tr><td>Tujuan</td><td><code>Child.weeklyHourCap</code>, <code>Child.aiConsent</code>, <code>AIMS_FOR</code> ke <code>Major</code></td><td>Jurusan hanya ditanya mulai SMP.</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section class="ref">
+      <h2>Status instalasi</h2>
+      <p>Server menentukan status dari isi database, bukan dari sebuah penanda. Karena itu status tetap benar setelah database dipulihkan dari cadangan.</p>
+      <ol class="plain">
+        <li>Saat server hidup: tunggu ArcadeDB, buat database <code>education</code>, jalankan migrasi skema, isi katalog awal. Semuanya aman diulang.</li>
+        <li><code>needs_owner</code>: belum ada pengguna. Halaman utama mengalihkan ke wizard, mulai dari langkah akun.</li>
+        <li><code>needs_child</code>: akun ada, anak belum. Wizard mulai dari langkah anak, memuat draf bila ada.</li>
+        <li><code>ready</code>: minimal satu anak tersimpan. Halaman utama terbuka.</li>
+      </ol>
+    </section>
+
+    <section class="ref">
+      <h2>Kasus yang perlu ditangani</h2>
+      <ul class="plain">
+        <li><b>Umur dan kelas tidak cocok.</b> Kelas selalu bisa diubah. Saran dari umur tidak pernah mengunci pilihan.</li>
+        <li><b>Sekolah Cambridge.</b> Kurikulum dicatat pada sekolah. Pemetaan kelas ke tahap nasional dikonfirmasi setelah onboarding, karena berbeda antarsekolah.</li>
+        <li><b>Riwayat sekolah lama.</b> Wizard hanya menanyakan sekolah sekarang. Sekolah sebelumnya ditambah dari halaman profil.</li>
+        <li><b>Entri di luar katalog.</b> Olahraga atau metode baru dibuat dengan penanda <code>custom</code>, lalu bisa digabung dengan entri katalog.</li>
+        <li><b>Berhenti di tengah.</b> Draf disimpan pada akun. Tidak ada node anak sebelum konfirmasi.</li>
+        <li><b>Anak kedua.</b> Wizard dijalankan lagi tanpa langkah akun. Katalog dipakai bersama.</li>
+        <li><b>Tanpa persetujuan AI.</b> Graf tetap berjalan. Saran AI dimatikan untuk anak itu.</li>
+        <li><b>Klik Selesai dua kali.</b> Belum ditangani di paket awal: perlu kunci idempotensi supaya anak tidak tercatat ganda.</li>
+      </ul>
+    </section>
+
+    <section class="ref">
+      <h2>Setelah onboarding</h2>
+      <p>Yang dilewati berubah menjadi daftar tugas, diurutkan dari yang paling menaikkan mutu sinyal bakat.</p>
+      <ol class="plain">
+        <li>Unggah rapor terakhir. Bukti rapor berbobot 0,8 dan menggantikan perkiraan awal.</li>
+        <li>Lengkapi lomba yang pernah diikuti beserta arsipnya.</li>
+        <li>Konfirmasi pemetaan tahap bila sekolah memakai Cambridge.</li>
+        <li>Isi jam dan biaya kegiatan, supaya beban mingguan terhitung.</li>
+        <li>Mulai kelas 8, tambahkan kandidat SMA untuk dibandingkan.</li>
+      </ol>
+    </section>
+
+    <section class="ref">
+      <h2>Instalasi sampai onboarding</h2>
+      <p>Paket berisi <code>docker-compose.yml</code>, backend Go awal, migrasi skema, dan wizard ini. Yang dibutuhkan hanya Docker dengan plugin Compose.</p>
+<pre>unzip education-map.zip &amp;&amp; cd education-map
+cp .env.example .env          # lalu isi dua kata sandi di dalamnya
+docker compose up -d --build
+docker compose logs -f app    # tunggu baris "listening on :8080"</pre>
+      <p>Buka <code>http://localhost:8080</code>. Karena belum ada akun, halaman dialihkan ke <code>/onboarding</code> dan wizard mulai dari langkah akun.</p>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Endpoint</th><th>Guna</th></tr></thead>
+        <tbody>
+          <tr><td><code>GET /api/setup/status</code></td><td>Mengembalikan <code>needs_owner</code>, <code>needs_child</code>, atau <code>ready</code>.</td></tr>
+          <tr><td><code>POST /api/setup/owner</code></td><td>Membuat akun pertama. Ditolak bila akun sudah ada.</td></tr>
+          <tr><td><code>GET</code>, <code>PUT /api/onboarding/draft</code></td><td>Menyimpan dan memuat draf wizard.</td></tr>
+          <tr><td><code>POST /api/onboarding/complete</code></td><td>Memvalidasi jawaban dan menulis graf dalam satu transaksi.</td></tr>
+          <tr><td><code>GET /api/children</code></td><td>Daftar anak milik akun yang masuk.</td></tr>
+        </tbody>
+      </table></div>
+      <p><a id="lnkPeta" href="https://claude.ai/artifact/XXpWmvrFq1AZhyjR73KcN7">Peta konsep</a> · <a id="lnkArch" href="https://claude.ai/artifact/2TAPMnx3Vkb4S9tRfJBf5V">Arsitektur sistem</a></p>
+    </section>
+  </div>
+</main>
+
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s);
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const STORE='education-onboarding-draft';
+
+/* ---------- catalog shown in the wizard (ids match the seeded catalog) ---------- */
+const LEVELS=[['preschool','Belum sekolah'],['primary','SD'],['junior','SMP'],['senior','SMA'],['university','Kuliah']];
+const GRADES={primary:[1,6],junior:[7,9],senior:[10,12]};
+const DOMAINS=[['numeracy','Numerasi','berhitung, logika angka'],['literacy','Literasi','membaca, menulis'],['science','Sains','IPA, rasa ingin tahu'],['computing','Komputasi','logika, coding']];
+const LEVEL_NAMES=['Belum tahu','Perlu bantuan','Dasar','Cakap','Mahir'];
+const SPORTS=[['badminton','Badminton'],['swimming','Renang'],['basketball','Basket'],['aikido','Aikido']];
+const METHODS=[['abacus','Sempoa'],['Jarimatika','Jarimatika'],['Kumon','Kumon'],['Les privat','Les privat']];
+const INTERESTS=['Menggambar','Musik','Robotika','Membaca','Sains','Coding','Menulis','Menari'];
+const MAJORS=['Informatika','Kedokteran','Teknik','Desain','Bisnis','Hukum','Psikologi'];
+const TIERS=[['local','Lokal'],['provincial','Provinsi'],['national','Nasional'],['international','Internasional']];
+const COMP_TYPES=[['general','Umum'],['osn','OSN'],['o2sn','O2SN'],['fls2n','FLS2N'],['other','Lainnya']];
+const label=(list,id)=>{const f=list.find(x=>x[0]===id);return f?f[1]:id};
+
+/* ---------- state ---------- */
+const blank=()=>({owner:{email:''},child:{nickname:'',birthDate:''},position:{level:'',grade:0,manual:false},
+  school:{name:'',type:'public',curriculum:'national',startYear:''},baseline:{},interests:{},sports:{},methods:{},
+  competitions:[],goals:{weeklyHourCap:12,majors:{},aiConsent:false},extra:{interests:[],sports:[],methods:[],majors:[]}});
+let draft=blank(), password='', live=false, serverState='needs_owner', signedIn=false, index=0, maxSeen=0, done=false, busy=false;
+
+function get(path){return path.split('.').reduce((o,k)=>o==null?undefined:o[k],draft)}
+function set(path,value){const ks=path.split('.');let o=draft;for(let i=0;i<ks.length-1;i++){if(o[ks[i]]==null)o[ks[i]]={};o=o[ks[i]]}o[ks[ks.length-1]]=value}
+
+function ageOn(birth,at){let a=at.getFullYear()-birth.getFullYear();if(birth.getMonth()>at.getMonth()||(birth.getMonth()===at.getMonth()&&birth.getDate()>at.getDate()))a--;return a}
+function suggestGrade(birthISO){
+  const b=new Date(birthISO+'T00:00:00');if(isNaN(b))return null;
+  const now=new Date();let y=now.getFullYear();if(now.getMonth()<6)y--;
+  const g=ageOn(b,new Date(y,6,1))-6;return g<1?0:(g>12?13:g);
+}
+function levelOfGrade(g){return g===0?'preschool':g<=6?'primary':g<=9?'junior':g<=12?'senior':'university'}
+function stageOf(g){return g<1?null:g<=2?'A':g<=4?'B':g<=6?'C':g<=9?'D':g===10?'E':g<=12?'F':null}
+function applySuggestion(){
+  if(draft.position.manual)return;const g=suggestGrade(draft.child.birthDate);if(g==null)return;
+  draft.position.level=levelOfGrade(g);draft.position.grade=(g>=1&&g<=12)?g:0;
+}
+const inSchool=()=>['primary','junior','senior'].includes(draft.position.level);
+
+/* ---------- steps ---------- */
+const seg=(name,value,options,cls)=>'<div class="seg '+(cls||'')+'">'+options.map(o=>{const id=name.replace(/[^a-z0-9]/gi,'-')+'-'+o[0];
+  return '<input type="radio" name="'+esc(name)+'" id="'+esc(id)+'" value="'+esc(o[0])+'" data-k="'+esc(name)+'"'+(o[2]?' data-num':'')+(String(value)===String(o[0])?' checked':'')+'><label for="'+esc(id)+'">'+esc(o[1])+'</label>'}).join('')+'</div>';
+const scale=(name,value,zero)=>seg(name,value||0,[[0,zero,1],[1,'1',1],[2,'2',1],[3,'3',1],[4,'4',1]]);
+const chips=(group,list,selected)=>'<div class="chips">'+list.map(o=>'<button type="button" data-chip="'+esc(group)+'" data-id="'+esc(o[0])+'" aria-pressed="'+(selected[o[0]]?'true':'false')+'">'+esc(o[1])+'</button>').join('')+'</div>';
+const adder=(group,ph)=>'<div class="addrow"><input type="text" id="add-'+group+'" maxlength="40" placeholder="'+esc(ph)+'" aria-label="'+esc(ph)+'"><button type="button" class="btn small" data-add="'+group+'">Tambah</button></div>';
+const withExtra=(base,group)=>base.concat(draft.extra[group].map(n=>[n,n]));
+
+const STEPS=[
+ {id:'owner',title:'Akun pemilik',short:'Akun',
+  show:()=>!live||!signedIn,
+  render:()=>'<p>'+(live&&serverState!=='needs_owner'?'Masuk dengan akun yang sudah dibuat untuk melanjutkan.':'Akun ini memegang seluruh data anak. Dibuat sekali saat sistem baru terpasang.')+'</p>'
+   +'<div class="row"><div class="fld"><label for="o-email">Email</label><input type="email" id="o-email" data-k="owner.email" value="'+esc(draft.owner.email)+'" autocomplete="username"></div>'
+   +'<div class="fld"><label for="o-pass">Kata sandi</label><input type="password" id="o-pass" data-pass value="'+esc(password)+'" autocomplete="new-password"><span class="hint">Minimal 10 karakter.</span></div></div>',
+  validate:()=>!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(draft.owner.email)?'Isi email yang benar, misalnya nama@contoh.com.':password.length<10?'Kata sandi minimal 10 karakter.':null},
+ {id:'child',title:'Tentang anak',short:'Anak',show:()=>true,
+  render:()=>{const g=suggestGrade(draft.child.birthDate);let note='';
+   if(g!=null){const b=new Date(draft.child.birthDate+'T00:00:00'),a=ageOn(b,new Date());
+     note='<div class="note">Umur '+a+' tahun. Saran posisi: <b>'+(g===0?'belum sekolah':g===13?'kuliah':label(LEVELS,levelOfGrade(g))+' kelas '+g)+'</b>. Bisa diubah di langkah berikutnya.</div>'}
+   return '<p>Cukup nama panggilan. Nama lengkap tidak diperlukan dan tidak pernah dikirim ke AI.</p>'
+   +'<div class="row"><div class="fld"><label for="c-name">Nama panggilan</label><input type="text" id="c-name" data-k="child.nickname" maxlength="40" value="'+esc(draft.child.nickname)+'"></div>'
+   +'<div class="fld"><label for="c-birth">Tanggal lahir</label><input type="date" id="c-birth" data-k="child.birthDate" data-rerender max="'+new Date().toISOString().slice(0,10)+'" value="'+esc(draft.child.birthDate)+'"></div></div>'+note},
+  validate:()=>!draft.child.nickname.trim()?'Isi nama panggilan anak.':suggestGrade(draft.child.birthDate)==null||new Date(draft.child.birthDate)>new Date()?'Pilih tanggal lahir yang sudah lewat.':null},
+ {id:'position',title:'Posisi sekarang',short:'Posisi',show:()=>true,
+  render:()=>{const lv=draft.position.level,r=GRADES[lv];let h='<p>Jenjang dan kelas menentukan tahap mana yang aktif di graf dan langkah mana yang ditanyakan.</p>'
+   +'<fieldset><legend>Jenjang</legend>'+seg('position.level',lv,LEVELS,'wrap')+'</fieldset>';
+   if(r){const opts=[];for(let g=r[0];g<=r[1];g++)opts.push([g,'Kelas '+g,1]);
+     h+='<fieldset><legend>Kelas</legend>'+seg('position.grade',draft.position.grade,opts,'wrap')+'</fieldset>';
+     if(stageOf(draft.position.grade))h+='<div class="note">Tahap aktif: <b>Fase '+stageOf(draft.position.grade)+'</b>. Tahap sebelumnya ditandai selesai tanpa level, karena belum ada buktinya.</div>'}
+   else if(lv==='preschool')h+='<div class="note">Untuk anak yang belum sekolah, wizard hanya menanyakan minat dan kegiatan.</div>';
+   return h},
+  validate:()=>!draft.position.level?'Pilih jenjang.':GRADES[draft.position.level]&&!stageOf(draft.position.grade)?'Pilih kelas.':null},
+ {id:'school',title:'Sekolah',short:'Sekolah',optional:true,show:()=>draft.position.level&&draft.position.level!=='preschool',
+  render:()=>'<p>Sekolah yang sedang ditempuh. Sekolah sebelumnya bisa ditambah nanti.</p>'
+   +'<div class="row"><div class="fld"><label for="s-name">Nama sekolah</label><input type="text" id="s-name" data-k="school.name" maxlength="80" value="'+esc(draft.school.name)+'"></div>'
+   +'<div class="fld"><label for="s-year">Masuk tahun</label><input type="number" id="s-year" data-k="school.startYear" data-num min="1990" max="'+new Date().getFullYear()+'" value="'+esc(draft.school.startYear)+'"></div></div>'
+   +'<fieldset><legend>Jenis</legend>'+seg('school.type',draft.school.type,[['public','Negeri'],['private','Swasta'],['international','Internasional']])+'</fieldset>'
+   +'<fieldset><legend>Kurikulum</legend>'+seg('school.curriculum',draft.school.curriculum,[['national','Nasional'],['cambridge','Cambridge'],['ib','IB'],['other','Lainnya']],'wrap')+'</fieldset>'
+   +(draft.school.curriculum==='cambridge'?'<div class="note">Tahap Cambridge berbeda antarsekolah. Setelah onboarding, Anda akan diminta mengonfirmasi padanannya dengan kelas nasional.</div>':''),
+  validate:()=>draft.school.startYear&&(draft.school.startYear<1990||draft.school.startYear>new Date().getFullYear())?'Tahun masuk tidak masuk akal.':null},
+ {id:'baseline',title:'Gambaran kemampuan',short:'Kemampuan',optional:true,show:inSchool,
+  render:()=>'<p>Perkiraan Anda saat ini, per bidang. Biarkan <b>?</b> bila belum tahu. Kesenangan dicatat terpisah dari kemampuan.</p>'
+   +DOMAINS.map(d=>{const b=draft.baseline[d[0]]||{};return '<div class="item"><strong>'+esc(d[1])+'<span class="hint" style="display:block;font-weight:400">'+esc(d[2])+'</span></strong>'
+     +'<fieldset><legend>Kemampuan</legend>'+scale('baseline.'+d[0]+'.level',b.level,'?')+'</fieldset>'
+     +'<fieldset><legend>Kesenangan</legend>'+scale('baseline.'+d[0]+'.enjoyment',b.enjoyment,'–')+'</fieldset><span></span></div>'}).join('')
+   +'<span class="hint">1 perlu bantuan · 2 dasar · 3 cakap · 4 mahir</span>',
+  validate:()=>null},
+ {id:'interests',title:'Minat, olahraga, dan metode belajar',short:'Minat',optional:true,show:()=>true,
+  render:()=>{let h='<p>Pilih yang sedang dijalani atau terlihat disukai. Semuanya menjadi bukti untuk sinyal bakat.</p>'
+   +'<fieldset><legend>Minat</legend>'+chips('interests',withExtra(INTERESTS.map(n=>[n,n]),'interests'),draft.interests)+adder('interests','Minat lain')+'</fieldset>'
+   +'<fieldset><legend>Olahraga</legend>'+chips('sports',withExtra(SPORTS,'sports'),draft.sports)+adder('sports','Olahraga lain')+'</fieldset>';
+   Object.keys(draft.sports).forEach(id=>{const s=draft.sports[id];h+='<div class="item"><strong>'+esc(label(SPORTS,id))+'</strong>'
+     +'<fieldset><legend>Level</legend>'+seg('sports.'+id+'.level',s.level,[[1,'1',1],[2,'2',1],[3,'3',1],[4,'4',1]])+'</fieldset>'
+     +'<fieldset><legend>Kesenangan</legend>'+scale('sports.'+id+'.enjoyment',s.enjoyment,'–')+'</fieldset>'
+     +'<div class="fld"><label for="h-'+esc(id)+'">Jam/minggu</label><input type="number" id="h-'+esc(id)+'" data-k="sports.'+esc(id)+'.hoursPerWeek" data-num min="0" max="40" step="0.5" value="'+esc(s.hoursPerWeek)+'"></div></div>'});
+   h+='<fieldset><legend>Metode belajar</legend>'+chips('methods',withExtra(METHODS,'methods'),draft.methods)+adder('methods','Metode lain')+'</fieldset>';
+   return h},
+  validate:()=>null},
+ {id:'competitions',title:'Lomba yang pernah diikuti',short:'Lomba',optional:true,show:()=>draft.position.level&&draft.position.level!=='preschool',
+  render:()=>'<p>Catat babak tertinggi yang dicapai. Kisi-kisi dan soal bisa diunggah setelah onboarding.</p>'
+   +draft.competitions.map((c,i)=>'<div class="comp">'
+     +'<div class="fld" style="grid-column:1/-1"><label for="k-n'+i+'">Nama lomba</label><input type="text" id="k-n'+i+'" data-k="competitions.'+i+'.name" maxlength="80" value="'+esc(c.name)+'"></div>'
+     +'<div class="fld"><label for="k-t'+i+'">Jenis</label><select id="k-t'+i+'" data-k="competitions.'+i+'.type">'+COMP_TYPES.map(o=>'<option value="'+o[0]+'"'+(c.type===o[0]?' selected':'')+'>'+o[1]+'</option>').join('')+'</select></div>'
+     +'<div class="fld"><label for="k-y'+i+'">Tahun</label><input type="number" id="k-y'+i+'" data-k="competitions.'+i+'.year" data-num min="1990" max="'+new Date().getFullYear()+'" value="'+esc(c.year)+'"></div>'
+     +'<div class="fld"><label for="k-r'+i+'">Babak tertinggi</label><select id="k-r'+i+'" data-k="competitions.'+i+'.tier">'+TIERS.map(o=>'<option value="'+o[0]+'"'+(c.tier===o[0]?' selected':'')+'>'+o[1]+'</option>').join('')+'</select></div>'
+     +'<div class="fld"><label for="k-h'+i+'">Hasil</label><input type="text" id="k-h'+i+'" data-k="competitions.'+i+'.result" maxlength="60" placeholder="mis. juara 2" value="'+esc(c.result)+'"></div>'
+     +'<button type="button" class="btn small" data-del="'+i+'">Hapus</button></div>').join('')
+   +'<div><button type="button" class="btn" data-newcomp>Tambah lomba</button></div>',
+  validate:()=>{const y=new Date().getFullYear();for(const c of draft.competitions){if(!c.name.trim())return 'Isi nama lomba, atau hapus barisnya.';if(!(c.year>=1990&&c.year<=y))return 'Isi tahun lomba antara 1990 dan '+y+'.'}return null}},
+ {id:'goals',title:'Tujuan dan batasan',short:'Tujuan',optional:true,show:()=>true,
+  render:()=>{const major=['junior','senior','university'].includes(draft.position.level);
+   return '<p>Batas jam dipakai supaya saran tidak menambah kegiatan saat jadwal sudah penuh.</p>'
+   +'<div class="fld" style="max-width:240px"><label for="g-cap">Batas jam kegiatan per minggu</label><input type="number" id="g-cap" data-k="goals.weeklyHourCap" data-num min="0" max="60" value="'+esc(draft.goals.weeklyHourCap)+'"></div>'
+   +(major?'<fieldset><legend>Jurusan yang dipertimbangkan (boleh kosong)</legend>'+chips('majors',withExtra(MAJORS.map(n=>[n,n]),'majors'),draft.goals.majors)+adder('majors','Jurusan lain')+'</fieldset>':'')
+   +'<label class="check"><input type="checkbox" id="g-ai" data-k="goals.aiConsent"'+(draft.goals.aiConsent?' checked':'')+'><span>Izinkan saran AI untuk anak ini. Yang dikirim hanya id samaran dan potongan graf yang relevan, tanpa nama dan nama sekolah.</span></label>'},
+  validate:()=>draft.goals.weeklyHourCap<0||draft.goals.weeklyHourCap>60?'Batas jam harus antara 0 dan 60.':null},
+ {id:'review',title:'Tinjau dan selesaikan',short:'Tinjau',show:()=>true,
+  render:()=>{const p=payload(),rows=[['Anak',p.child.nickname+', lahir '+p.child.birthDate],
+     ['Posisi',label(LEVELS,p.position.level)+(p.position.grade?' kelas '+p.position.grade:'')],
+     ['Sekolah',p.school?p.school.name+' ('+p.school.type+', '+p.school.curriculum+')':'belum diisi'],
+     ['Kemampuan',p.baseline.length?p.baseline.length+' bidang dinilai':'belum diisi'],
+     ['Minat',p.interests.map(x=>x.name).join(', ')||'belum diisi'],
+     ['Olahraga',Object.keys(draft.sports).map(id=>label(SPORTS,id)).join(', ')||'belum diisi'],
+     ['Lomba',p.competitions.length?p.competitions.length+' lomba':'belum diisi'],
+     ['Batas jam',p.goals.weeklyHourCap+' jam per minggu'],['Saran AI',p.goals.aiConsent?'diizinkan':'tidak diizinkan']];
+   const todo=missing();
+   return '<p>Periksa sekali lagi. Setelah ini graf ditulis dan halaman utama terbuka.</p><dl class="sum">'+rows.map(r=>'<dt>'+esc(r[0])+'</dt><dd>'+esc(r[1])+'</dd>').join('')+'</dl>'
+   +(todo.length?'<h3>Bisa dilengkapi nanti</h3><ul class="todo">'+todo.map(t=>'<li>'+esc(t)+'</li>').join('')+'</ul>':'')},
+  validate:()=>null}
+];
+const visible=()=>STEPS.filter(s=>s.show());
+
+/* ---------- payload: the JSON the backend validates ---------- */
+function payload(){
+  const p={child:{nickname:draft.child.nickname.trim(),birthDate:draft.child.birthDate},position:{level:draft.position.level,grade:GRADES[draft.position.level]?draft.position.grade:0},
+    school:null,baseline:[],interests:[],sports:[],methods:[],competitions:[],goals:{weeklyHourCap:+draft.goals.weeklyHourCap||0,majors:[],aiConsent:!!draft.goals.aiConsent}};
+  if(draft.position.level!=='preschool'&&draft.school.name.trim())p.school={name:draft.school.name.trim(),type:draft.school.type,curriculum:draft.school.curriculum,startYear:+draft.school.startYear||0};
+  if(inSchool())DOMAINS.forEach(d=>{const b=draft.baseline[d[0]];if(b&&b.level>0)p.baseline.push({domain:d[0],level:b.level,enjoyment:b.enjoyment||0})});
+  Object.keys(draft.interests).forEach(n=>p.interests.push({name:n,score:3}));
+  Object.keys(draft.sports).forEach(id=>{const s=draft.sports[id];p.sports.push({name:id,level:s.level||1,enjoyment:s.enjoyment||0,hoursPerWeek:+s.hoursPerWeek||0})});
+  p.methods=Object.keys(draft.methods);
+  if(draft.position.level!=='preschool')draft.competitions.forEach(c=>{if(c.name.trim())p.competitions.push({name:c.name.trim(),type:c.type,year:+c.year,tier:c.tier,result:(c.result||'').trim()})});
+  if(['junior','senior','university'].includes(draft.position.level))p.goals.majors=Object.keys(draft.goals.majors);
+  return p;
+}
+function missing(){const p=payload(),m=[];
+  if(draft.position.level!=='preschool'&&!p.school)m.push('Sekolah sekarang');
+  if(inSchool()&&p.baseline.length<DOMAINS.length)m.push('Gambaran kemampuan untuk '+(DOMAINS.length-p.baseline.length)+' bidang');
+  if(!p.interests.length&&!p.sports.length)m.push('Minat atau olahraga');
+  if(draft.position.level!=='preschool'&&!p.competitions.length)m.push('Lomba yang pernah diikuti');
+  if(inSchool())m.push('Rapor terakhir, untuk menggantikan perkiraan awal');
+  return m}
+
+/* ---------- aside: writes and completeness (mirrors the backend) ---------- */
+function writes(){
+  const p=payload(),w=[];const add=(text,n,node)=>{if(n>0)w.push([text,n,node])};
+  if(!p.child.nickname||!p.child.birthDate)return w;
+  add('Child',1,true);add('(User)-[:GUARDIAN_OF]->(Child)',1);
+  if(p.position.level){const order=['A','B','C','D','E','F'],st=p.position.level==='university'?'U':stageOf(p.position.grade);
+    add('(Child)-[:ENROLLED_IN]->(Stage)',st==='U'?7:st?order.indexOf(st)+1:0)}
+  if(p.school){add('School',1,true);add('(School)-[:USES]->(Curriculum)',1);add('(Child)-[:ATTENDS]->(School)',1)}
+  add('Observation',p.baseline.length,true);add('(Child)-[:MASTERS]->(Competency)',p.baseline.length);
+  add('(Child)-[:INTERESTED_IN]->(Interest)',p.interests.length);
+  add('(Child)-[:PRACTICES]->(Sport)',p.sports.length);
+  add('(Child)-[:LEARNS_WITH]->(Method)',p.methods.length);
+  add('Competition, CompetitionEdition, Round',p.competitions.length,true);add('(Child)-[:PARTICIPATES_IN]->(Round)',p.competitions.length);
+  add('(Child)-[:AIMS_FOR]->(Major)',p.goals.majors.length);
+  return w}
+function completeness(){
+  const p=payload(),lv=draft.position.level,parts=[[20,p.child.nickname&&p.child.birthDate?1:0],[20,lv&&(!GRADES[lv]||stageOf(p.position.grade))?1:0]];
+  if(lv&&lv!=='preschool')parts.push([15,p.school?1:0]);
+  if(inSchool())parts.push([20,p.baseline.length/DOMAINS.length]);
+  parts.push([15,(p.interests.length||p.sports.length)?1:0]);
+  if(lv&&lv!=='preschool')parts.push([5,p.competitions.length?1:0]);
+  parts.push([5,p.goals.aiConsent?1:0]);
+  const tot=parts.reduce((s,x)=>s+x[0],0);return parts.reduce((s,x)=>s+x[0]*x[1],0)/tot}
+let lastWrites='';
+function renderAside(){
+  const w=writes(),key=JSON.stringify(w);
+  if(key!==lastWrites){lastWrites=key;const ul=$('#writes'),have={};[...ul.children].forEach(li=>have[li.dataset.t]=li);
+    w.forEach(x=>{let li=have[x[0]];if(!li){li=document.createElement('li');li.dataset.t=x[0];li.className=x[2]?'node':'';li.innerHTML='<span></span><b></b>';li.firstChild.textContent=x[0];ul.appendChild(li)}
+      li.lastChild.textContent='×'+x[1];delete have[x[0]]});
+    Object.keys(have).forEach(k=>have[k].remove());$('#writesEmpty').hidden=w.length>0}
+  const c=completeness();$('#pct').textContent=Math.round(c*100)+'%';$('#pctBar').style.setProperty('--v',c)}
+
+/* ---------- persistence ---------- */
+let saveTimer=null;
+function save(){
+  clearTimeout(saveTimer);saveTimer=setTimeout(()=>{const body=JSON.stringify({draft,index});
+    if(live){if(signedIn)fetch('/api/onboarding/draft',{method:'PUT',headers:{'Content-Type':'application/json'},body}).catch(()=>{})}
+    else{try{localStorage.setItem(STORE,body)}catch(e){}}},400)}
+function restore(saved){if(!saved||!saved.draft)return;const b=blank();draft=Object.assign(b,saved.draft);draft.extra=Object.assign(blank().extra,saved.draft.extra||{});draft.goals=Object.assign(blank().goals,saved.draft.goals||{});
+  index=Math.min(saved.index||0,visible().length-1);maxSeen=index}
+async function api(method,path,body){
+  const res=await fetch(path,{method,headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined});
+  let data={};try{data=await res.json()}catch(e){}
+  if(!res.ok)throw new Error(data.error||('Server menjawab '+res.status));return data}
+
+/* ---------- rendering and navigation ---------- */
+const stepEl=$('#step'), errEl=$('#err');
+function renderStep(){
+  const list=visible(),s=list[index];
+  stepEl.innerHTML=done?doneHTML():'<h2>'+esc(s.title)+'</h2>'+s.render();
+  $('#progTxt').textContent=done?'Selesai':'Langkah '+(index+1)+' dari '+list.length;
+  $('#progOpt').textContent=!done&&s.optional?'Boleh dilewati':'';
+  $('#progBar').style.setProperty('--v',done?1:(index+1)/list.length);
+  $('#nav').innerHTML=list.map((x,i)=>'<li><button type="button" data-go="'+i+'" class="'+(i<=maxSeen&&!done?'seen':'')+'"'+(i===index&&!done?' aria-current="step"':'')+(i>maxSeen||done?' tabindex="-1"':'')+'>'+esc(x.short)+'</button></li>').join('');
+  $('#back').hidden=done||index===0;$('#skip').hidden=done||!s.optional;
+  $('#next').hidden=done;$('#next').textContent=s.id==='review'?'Selesai dan buat graf':'Lanjut';
+  renderAside()}
+function doneHTML(){return '<h2>Graf awal siap ditulis</h2><p>Di sistem yang terpasang, jawaban ini dikirim ke <code>POST /api/onboarding/complete</code>, ditulis dalam satu transaksi, lalu halaman utama terbuka. Berikut isi yang dikirim.</p><pre>'+esc(JSON.stringify(payload(),null,2))+'</pre><div><button type="button" class="btn" id="again">Ulangi dari awal</button></div>'}
+let animTimer=null;
+function show(instant,dir){
+  clearTimeout(animTimer);errEl.textContent='';
+  if(instant||reduce){stepEl.className='step instant';renderStep();focusFirst();return}
+  stepEl.style.setProperty('--dir',dir);stepEl.className='step out';
+  animTimer=setTimeout(()=>{renderStep();stepEl.className='step pre';void stepEl.offsetWidth;stepEl.className='step';focusFirst()},110)}
+function focusFirst(){const el=stepEl.querySelector('input:not([type=radio]):not([type=checkbox]),select');if(el&&matchMedia('(pointer:fine)').matches)el.focus({preventScroll:true})}
+function goTo(i,instant){const list=visible();i=Math.max(0,Math.min(list.length-1,i));const dir=i>=index?1:-1;index=i;maxSeen=Math.max(maxSeen,i);save();show(instant,dir)}
+
+async function next(instant,skipping){
+  if(busy||done)return;const list=visible(),s=list[index];
+  if(!skipping){const problem=s.validate();if(problem){errEl.textContent=problem;return}}
+  try{
+    if(live&&s.id==='owner'){busy=true;$('#next').disabled=true;
+      await api('POST',serverState==='needs_owner'?'/api/setup/owner':'/api/login',{email:draft.owner.email,password});
+      signedIn=true;password='';
+      if(serverState!=='needs_owner'){const d=await api('GET','/api/onboarding/draft');restore(d.draft)}
+      serverState='needs_child';index=0;maxSeen=Math.max(maxSeen,0);show(instant,1);return}
+    if(s.id==='review'){
+      if(live){busy=true;$('#next').disabled=true;await api('POST','/api/onboarding/complete',payload());location.href='/';return}
+      done=true;try{localStorage.removeItem(STORE)}catch(e){}show(instant,1);return}
+    goTo(index+1,instant);
+  }catch(e){errEl.textContent=e.message}finally{busy=false;$('#next').disabled=false}}
+
+$('#wf').addEventListener('submit',ev=>{ev.preventDefault();next(ev.submitter?false:true)});
+$('#next').addEventListener('click',ev=>{ev.preventDefault();next(ev.detail===0)});
+$('#skip').addEventListener('click',ev=>next(ev.detail===0,true));
+$('#back').addEventListener('click',ev=>goTo(index-1,ev.detail===0));
+$('#nav').addEventListener('click',ev=>{const b=ev.target.closest('[data-go]');if(b&&!done&&+b.dataset.go<=maxSeen)goTo(+b.dataset.go,ev.detail===0)});
+
+function rerenderKeepFocus(sel){renderStep();if(sel){const el=stepEl.querySelector(sel);if(el)el.focus({preventScroll:true})}}
+stepEl.addEventListener('input',ev=>{
+  const el=ev.target;errEl.textContent='';
+  if(el.hasAttribute('data-pass')){password=el.value;return}
+  const k=el.dataset.k;if(!k)return;
+  let v=el.type==='checkbox'?el.checked:el.value;if(el.hasAttribute('data-num'))v=v===''?'':+v;
+  set(k,v);
+  if(k==='position.level'){draft.position.manual=true;const r=GRADES[v];if(!r)draft.position.grade=0;else if(draft.position.grade<r[0]||draft.position.grade>r[1])draft.position.grade=0;rerenderKeepFocus('#'+CSS.escape(el.id))}
+  else if(k==='position.grade'){draft.position.manual=true;rerenderKeepFocus('#'+CSS.escape(el.id))}
+  else if(k==='child.birthDate'){applySuggestion();rerenderKeepFocus('#c-birth')}
+  else if(k==='school.curriculum'){rerenderKeepFocus('#'+CSS.escape(el.id))}
+  else renderAside();
+  save()});
+stepEl.addEventListener('click',ev=>{
+  const chip=ev.target.closest('[data-chip]'),add=ev.target.closest('[data-add]'),del=ev.target.closest('[data-del]');
+  if(chip){const g=chip.dataset.chip,id=chip.dataset.id,bag=g==='majors'?draft.goals.majors:draft[g];
+    if(bag[id])delete bag[id];else bag[id]=g==='sports'?{level:1,enjoyment:0,hoursPerWeek:1}:true;
+    rerenderKeepFocus('[data-chip="'+g+'"][data-id="'+CSS.escape(id)+'"]');save();return}
+  if(add){const g=add.dataset.add,input=$('#add-'+g),name=input.value.trim().slice(0,40);if(!name)return;
+    const base={interests:INTERESTS.map(n=>[n,n]),sports:SPORTS,methods:METHODS,majors:MAJORS.map(n=>[n,n])}[g];
+    const exists=base.concat(draft.extra[g].map(n=>[n,n])).some(o=>o[1].toLowerCase()===name.toLowerCase());
+    if(!exists)draft.extra[g].push(name);
+    const found=base.find(o=>o[1].toLowerCase()===name.toLowerCase()),id=found?found[0]:name,bag=g==='majors'?draft.goals.majors:draft[g];
+    if(!bag[id])bag[id]=g==='sports'?{level:1,enjoyment:0,hoursPerWeek:1}:true;
+    rerenderKeepFocus('#add-'+g);save();return}
+  if(del){draft.competitions.splice(+del.dataset.del,1);rerenderKeepFocus('[data-newcomp]');save();return}
+  if(ev.target.closest('[data-newcomp]')){draft.competitions.push({name:'',type:'general',year:new Date().getFullYear(),tier:'local',result:''});
+    rerenderKeepFocus('#k-n'+(draft.competitions.length-1));save();return}
+  if(ev.target.id==='again'){draft=blank();password='';done=false;index=0;maxSeen=0;lastWrites='';show(ev.detail===0,-1)}});
+stepEl.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&ev.target.id&&ev.target.id.indexOf('add-')===0){ev.preventDefault();stepEl.querySelector('[data-add="'+ev.target.id.slice(4)+'"]').click()}});
+
+/* ---------- start: live when the backend answers, otherwise a self-contained demo ---------- */
+(async function init(){
+  try{const res=await fetch('/api/setup/status',{headers:{Accept:'application/json'}});
+    if(res.ok&&(res.headers.get('Content-Type')||'').indexOf('json')>=0){const s=await res.json();
+      if(s&&s.state){live=true;serverState=s.state;signedIn=!!s.signedIn;document.body.classList.add('live');
+        if(s.state==='ready'&&!location.search.includes('add')){location.replace('/');return}
+        if(signedIn){try{const d=await api('GET','/api/onboarding/draft');restore(d.draft)}catch(e){}}}}}
+  catch(e){}
+  if(!live){try{restore(JSON.parse(localStorage.getItem(STORE)||'null'))}catch(e){}}
+  show(true,1);
+})();
+})();
+</script>
+</body>
+</html>
