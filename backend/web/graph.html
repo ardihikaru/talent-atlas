@@ -20,6 +20,8 @@
   --f-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
   --ease-out:cubic-bezier(0.23,1,0.32,1);
   --ease-in-out:cubic-bezier(0.77,0,0.175,1);
+  --ease-drawer:cubic-bezier(0.32,0.72,0,1);
+  --top:56px; --side:236px;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
@@ -42,16 +44,13 @@ html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.55 var(--f-body)}
 button,input,select{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.page{max-width:1480px;margin:0 auto;padding:28px 24px 72px;display:flex;flex-direction:column;gap:28px}
-@media (max-width:520px){.page{padding:20px 16px 56px}}
 
-h1{font:700 clamp(28px,4vw,40px)/1.08 var(--f-display);letter-spacing:-.02em;margin:0;text-wrap:balance}
+h1{font:700 clamp(24px,3vw,32px)/1.1 var(--f-display);letter-spacing:-.02em;margin:0;text-wrap:balance;overflow-wrap:anywhere}
 h2{font:700 22px/1.2 var(--f-display);letter-spacing:-.015em;margin:0;text-wrap:balance}
 h3{font:600 15px/1.3 var(--f-body);margin:0}
 p{margin:0}
 .lead{max-width:65ch;color:var(--muted);font-size:16px}
-.top{display:flex;flex-direction:column;gap:10px}
-.chip{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;padding:5px 11px;border:1px solid var(--line);border-radius:999px;background:var(--surface);font-size:13px}
+.chip{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;max-width:100%;overflow-wrap:anywhere;padding:5px 11px;border:1px solid var(--line);border-radius:999px;background:var(--surface);font-size:13px}
 .chip i{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
 
 /* ---------- buttons ---------- */
@@ -82,7 +81,7 @@ code,pre{font-family:var(--f-mono);font-size:12.5px}
 .pat{align-self:flex-start;padding:3px 8px;border-radius:6px;background:var(--band);border:1px solid var(--line);overflow-wrap:anywhere}
 
 /* ---------- graph stage ---------- */
-.scroller{overflow-x:auto;border:1px solid var(--line);border-radius:16px;background:var(--bg)}
+.scroller{overflow-x:auto;border:1px solid var(--line);border-radius:16px;background:var(--bg);scroll-margin-top:calc(var(--top) + 12px)}
 .fit{position:relative}
 .stage{position:absolute;left:0;top:0;width:1432px;transform-origin:0 0}
 .band{position:absolute;top:8px;bottom:8px;border-radius:12px;background:var(--band)}
@@ -272,25 +271,139 @@ td code{font-size:12px;white-space:nowrap}
   .toast{transform:none}
   .caption.sw{filter:none}
 }
-.appnav{display:flex;flex-wrap:wrap;gap:4px 16px;align-items:center;font-size:13.5px;margin-bottom:6px}
-.appnav a,.appnav button{color:inherit;opacity:.72;text-underline-offset:3px;background:none;border:0;padding:0;font:inherit;cursor:pointer;text-decoration:underline;transition:opacity 160ms cubic-bezier(0.23,1,0.32,1)}
-@media (hover:hover) and (pointer:fine){.appnav a:hover,.appnav button:hover{opacity:1}}
-#picker{font-size:13.5px;margin-top:8px}#picker select{font:inherit;padding:4px 8px;border-radius:8px}
+
+/* ---------- app shell: topbar + sidebar + one view at a time ---------- */
+.topbar{position:sticky;top:0;z-index:30;height:var(--top);display:flex;align-items:center;gap:14px;padding:0 20px;border-bottom:1px solid var(--line);
+  background:color-mix(in oklab,var(--bg) 86%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.brand{display:inline-flex;align-items:center;gap:8px;font:700 17px/1 var(--f-display);letter-spacing:-.01em;color:inherit;text-decoration:none;white-space:nowrap}
+.brand i{width:9px;height:9px;border-radius:3px;background:var(--accent);transform:rotate(45deg)}
+.crumb{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:14px;font-weight:500}
+.crumb::before{content:"/";margin-right:12px;opacity:.5}
+#picker{display:flex;align-items:center;gap:8px;min-width:0;font-size:13.5px;color:var(--muted)}
+#picker[hidden],.crumb[hidden]{display:none}
+#picker select{width:auto;min-width:0;max-width:220px;padding:5px 10px;border-radius:8px;color:var(--ink);font-weight:600}
+.spacer{flex:1}
+a.btn{text-decoration:none;color:inherit}
+a.btn.primary{color:var(--bg)}
+#topInput[hidden],.appnav [hidden]{display:none}
+.menu{display:none;place-items:center;width:36px;height:36px;margin-left:-6px;border:0;border-radius:9px;background:none;cursor:pointer;transition:transform 160ms var(--ease-out),background-color 150ms ease}
+.menu:active{transform:scale(.95)}
+.menu svg,.sidenav svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+@media (hover:hover) and (pointer:fine){.menu:hover{background:var(--band)}}
+
+.shell{display:grid;grid-template-columns:var(--side) minmax(0,1fr);min-height:calc(100dvh - var(--top))}
+.side{position:sticky;top:var(--top);height:calc(100dvh - var(--top));overflow-y:auto;display:flex;flex-direction:column;justify-content:space-between;gap:24px;padding:18px 12px 16px;border-right:1px solid var(--line)}
+.sidenav{display:flex;flex-direction:column;gap:2px}
+.sidenav a,.appnav a,.appnav button{position:relative;display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border:0;border-radius:8px;background:none;color:var(--muted);font:500 14px/1.3 var(--f-body);text-align:left;text-decoration:none;cursor:pointer;
+  transition:background-color 150ms ease,color 150ms ease,transform 160ms var(--ease-out)}
+.sidenav a:active,.appnav a:active,.appnav button:active{transform:scale(.98)}
+.sidenav a.sub{font-size:13.5px;padding-left:12px}
+.sidenav a[aria-current="page"]{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:0 0 0 1px var(--line),0 1px 2px rgba(23,35,43,.06)}
+.sidenav a[aria-current="page"]::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--accent)}
+.sidehd{margin:18px 10px 6px;font:600 10.5px/1 var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.appnav{display:flex;flex-direction:column;gap:1px;padding-top:12px;border-top:1px solid var(--line)}
+.appnav a,.appnav button{font-size:13px;padding:6px 10px}
+@media (hover:hover) and (pointer:fine){
+  .sidenav a:hover,.appnav a:hover,.appnav button:hover{background:var(--band);color:var(--ink)}
+  .sidenav a[aria-current="page"]:hover{background:var(--surface)}
+}
+.scrim{display:none}
+
+.content{min-width:0;padding:28px 32px 80px}
+.view{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.view[hidden]{display:none}
+.viewhead{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end;justify-content:space-between}
+.vh-t{display:flex;flex-direction:column;gap:8px;min-width:0}
+.view > .lead{margin-top:-8px}
+.ref > h1 + p{color:var(--muted)}
+
+.legendbox{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:0 14px}
+.legendbox summary{padding:10px 0;font-size:13.5px;font-weight:600;color:var(--muted);cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px}
+.legendbox summary::-webkit-details-marker{display:none}
+.legendbox summary::before{content:"";width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(-45deg);transition:transform 160ms var(--ease-out)}
+.legendbox[open] summary::before{transform:rotate(45deg)}
+.legendbox[open]{padding-bottom:14px;display:flex;flex-direction:column;gap:10px}
+@media (hover:hover) and (pointer:fine){.legendbox summary:hover{color:var(--ink)}}
+
+.panelhead{display:flex;flex-direction:column;gap:4px}
+.panelhead p{color:var(--muted);font-size:14px;max-width:80ch}
+.saran-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.4fr);gap:24px;align-items:start}
+.scol{display:flex;flex-direction:column;gap:12px;min-width:0}
+@media (max-width:1240px){.saran-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.scol.wide{grid-column:1/-1}}
+@media (max-width:720px){.saran-grid{grid-template-columns:minmax(0,1fr)}}
+.inputgrid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:24px;align-items:start}
+.icol{display:flex;flex-direction:column;gap:12px;min-width:0}
+@media (max-width:960px){.inputgrid{grid-template-columns:minmax(0,1fr)}}
+body.lock{overflow:hidden}
+.work.plan{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.work.plan > :last-child{grid-column:1/-1}
+@media (max-width:900px){.work.plan{grid-template-columns:minmax(0,1fr)}}
+
+/* below 1024px the sidebar becomes a drawer */
+@media (max-width:1023px){
+  .menu{display:inline-grid}
+  .topbar{padding:0 12px;gap:10px}
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .side{position:fixed;z-index:40;left:0;top:0;bottom:0;height:auto;width:min(84vw,300px);padding-top:max(18px,env(safe-area-inset-top));padding-bottom:max(16px,env(safe-area-inset-bottom));
+    border-right:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow);
+    transform:translateX(-100%);visibility:hidden;transition:transform 200ms var(--ease-out),visibility 0s 200ms}
+  .side.open{transform:none;visibility:visible;transition:transform 280ms var(--ease-drawer),visibility 0s}
+  .side .sidenav a[aria-current="page"]{background:var(--band);box-shadow:none}
+  .scrim{display:block;position:fixed;inset:0;z-index:35;background:rgba(10,16,20,.42);opacity:0;visibility:hidden;transition:opacity 200ms ease,visibility 0s 200ms}
+  .scrim.open{opacity:1;visibility:visible;transition:opacity 240ms ease,visibility 0s}
+  .content{padding:20px 20px 64px}
+}
+@media (max-width:560px){
+  .content{padding:18px 16px 56px}
+  #picker label{display:none}
+  #picker select{max-width:130px}
+  #topInput{display:none}
+}
+@media (prefers-reduced-motion:reduce) and (max-width:1023px){
+  .side,.side.open{transform:none}
+  .side{opacity:0;transition:opacity 150ms ease,visibility 0s 150ms}
+  .side.open{opacity:1;transition:opacity 150ms ease,visibility 0s}
+}
+@media (prefers-reduced-motion:reduce){.sidenav a:active,.appnav a:active,.appnav button:active,.menu:active{transform:none}}
 .loaderr{padding:16px;margin:16px;border-radius:12px;border:1px solid currentColor}
 </style>
 </head>
 <body>
-<main class="page">
+<header class="topbar">
+  <button type="button" class="menu" id="menuBtn" aria-label="Buka menu" aria-expanded="false" aria-controls="side"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11"/></svg></button>
+  <a class="brand" href="/"><i></i>Talent Atlas</a>
+  <span class="crumb nick" id="crumb">Raka</span>
+  <div id="picker" hidden><label for="childSel">Anak</label><select id="childSel"></select></div>
+  <span class="spacer"></span>
+  <a class="btn small primary" href="#input" id="topInput">Tambah input</a>
+</header>
+<div class="scrim" id="scrim"></div>
+<div class="shell">
+<aside class="side" id="side" aria-label="Menu">
+  <nav class="sidenav" aria-label="Bagian halaman">
+    <a href="#peta" data-v="peta"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="4" r="2"/><circle cx="12.5" cy="4" r="2"/><circle cx="8" cy="12" r="2"/><path d="M5.3 5.1 6.8 10.3M10.7 5.1 9.2 10.3M5.5 4h5"/></svg><span>Peta dan saran</span></a>
+    <a href="#input" data-v="input"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg><span>Input berkala</span></a>
+    <a href="#rencana" data-v="rencana"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="3.5" width="11" height="10" rx="2"/><path d="M2.5 7h11M5.5 2v3M10.5 2v3"/></svg><span>Perencanaan</span></a>
+    <p class="sidehd">Referensi teknis</p>
+    <a href="#ref-model" data-v="ref-model" class="sub"><span>Model graf</span></a>
+    <a href="#ref-lomba" data-v="ref-lomba" class="sub"><span>Lomba dan arsip</span></a>
+    <a href="#ref-alur" data-v="ref-alur" class="sub"><span>Dari input ke saran</span></a>
+    <a href="#ref-query" data-v="ref-query" class="sub"><span>Query inti</span></a>
+    <a href="#ref-urutan" data-v="ref-urutan" class="sub"><span>Urutan pengerjaan</span></a>
+  </nav>
+  <nav class="appnav" id="appnav" aria-label="Akun"><a href="/">Beranda</a><a href="/onboarding?add">Tambah anak</a><a href="/graph?demo" id="navDemo">Lihat contoh</a><button type="button" id="logout" hidden>Keluar</button></nav>
+</aside>
+<main class="content">
 
-  <header class="top">
-    <nav class="appnav" id="appnav" aria-label="Navigasi"><a href="/">Beranda</a><a href="/onboarding?add">Tambah anak</a><a href="/graph?demo" id="navDemo">Lihat contoh</a><button type="button" id="logout" hidden>Keluar</button></nav>
-    <h1 id="title">Peta Graf Pendidikan Anak</h1>
-    <p class="lead">Satu graf yang memuat perjalanan anak dari SD kelas 1 sampai kuliah: sekolah dan kurikulumnya, apa yang sudah dikuasai, minat, lomba, dan olahraganya, lalu di mana bakatnya terlihat dan bagian jalur mana yang masih berlubang.</p>
-    <span class="chip" id="who"><i></i>Data contoh fiktif: Raka, kelas 8 SMP, November 2026</span>
-    <div id="picker" hidden><label for="childSel">Anak</label> <select id="childSel"></select></div>
-  </header>
-
-  <section class="viz" aria-label="Graf pendidikan">
+  <section class="view" data-view="peta">
+    <div class="viewhead">
+      <div class="vh-t">
+        <h1 id="title">Peta Graf Pendidikan Anak</h1>
+        <span class="chip" id="who"><i></i>Data contoh fiktif: Raka, kelas 8 SMP, November 2026</span>
+      </div>
+    </div>
+    <p class="lead">Perjalanan anak dari SD sampai kuliah dalam satu graf: sekolah, kemampuan, minat, lomba, dan olahraga, lalu di mana bakatnya terlihat dan bagian jalur mana yang masih berlubang.</p>
+    <div class="viz" aria-label="Graf pendidikan">
     <div class="stepbar">
       <div class="steps" id="steps" role="group" aria-label="Langkah membangun graf">
         <div class="ind" id="ind"></div>
@@ -318,7 +431,9 @@ td code{font-size:12px;white-space:nowrap}
         <div class="pop" id="pop" role="dialog" aria-label="Detail node"></div>
       </div>
     </div>
-
+    </div>
+    <details class="legendbox">
+      <summary>Legenda dan cara membaca</summary>
     <div class="legend">
       <span><i style="--c:var(--ink)"></i>Tahap dan sekolah</span>
       <span><i style="--c:var(--c-blue)"></i>Kompetensi dan metode belajar</span>
@@ -331,74 +446,99 @@ td code{font-size:12px;white-space:nowrap}
       <span><i class="dot"></i>Disasar saran AI</span>
     </div>
     <p class="note">Klik node untuk melihat properti, relasi, dan query-nya. Graf ini adalah ego-graph <span class="nick">Raka</span>: relasi dari node Anak tidak digambar sebagai garis, melainkan sebagai atribut pada node tujuannya (bar level = <code>MASTERS.level</code>). Kolom menunjukkan tahap tempat sebuah kompetensi diajarkan (<code>TAUGHT_IN</code>).</p>
-  </section>
-
-  <section class="work">
+    </details>
     <div class="panel">
-      <h2>Input berkala</h2>
-      <p>Setiap input menjadi node Observasi baru dan memperbarui level pada relasi anak. <span id="tryHint">Coba ubah Aljabar ke level 3, atau Renang ke level 4, dan lihat bakat serta sarannya berubah.</span></p>
-      <form id="f" autocomplete="off">
-        <div class="row">
-          <div class="fld">
-            <label for="fSrc">Sumber</label>
-            <select id="fSrc">
-              <option value="Rapor">Rapor sekolah</option>
-              <option value="Catatan guru">Catatan guru</option>
-              <option value="Pengamatan">Pengamatan orang tua</option>
-              <option value="Tes atau lomba">Tes atau lomba</option>
-            </select>
-          </div>
-          <div class="fld">
-            <label for="fSubject">Tentang</label>
-            <select id="fSubject"></select>
-          </div>
+      <div class="panelhead">
+        <h2>Bakat dan saran AI</h2>
+        <p>Contoh keluaran, dihitung dari aturan sederhana di halaman ini. Di sistem nyata, teksnya ditulis AI platform dari sub-graf yang sama. Arahkan atau klik untuk melihatnya di graf.</p>
+      </div>
+      <div class="saran-grid">
+        <div class="scol">
+          <h3>Sinyal bakat</h3>
+          <div class="majorRows" id="talents"></div>
+          <span class="hint">Tiap bukti ditimbang menurut sumbernya (lomba 1,0; rapor dan tes 0,8; guru atau pelatih 0,6; orang tua 0,4) dan bobotnya berkurang separuh tiap 3 tahun. Urutan memakai gabungan kemampuan dan kesenangan.</span>
         </div>
-        <fieldset>
-          <legend>Level</legend>
-          <div class="seg">
-            <input type="radio" name="lv" id="lv1" value="1"><label for="lv1">1</label>
-            <input type="radio" name="lv" id="lv2" value="2"><label for="lv2">2</label>
-            <input type="radio" name="lv" id="lv3" value="3" checked><label for="lv3">3</label>
-            <input type="radio" name="lv" id="lv4" value="4"><label for="lv4">4</label>
-          </div>
-          <span class="hint" id="lvHint"></span>
-        </fieldset>
-        <fieldset>
-          <legend>Kesenangan anak (opsional)</legend>
-          <div class="seg seg5">
-            <input type="radio" name="en" id="en0" value="0" checked><label for="en0">–</label>
-            <input type="radio" name="en" id="en1" value="1"><label for="en1">1</label>
-            <input type="radio" name="en" id="en2" value="2"><label for="en2">2</label>
-            <input type="radio" name="en" id="en3" value="3"><label for="en3">3</label>
-            <input type="radio" name="en" id="en4" value="4"><label for="en4">4</label>
-          </div>
-          <span class="hint">Seberapa anak menikmatinya, dicatat terpisah dari kemampuannya.</span>
-        </fieldset>
-        <div class="fld">
-          <label for="fNote">Catatan (opsional)</label>
-          <input type="text" id="fNote" maxlength="120" placeholder="mis. sudah lancar persamaan linear">
+        <div class="scol">
+          <h3>Kesiapan jurusan</h3>
+          <div class="majorRows" id="majorRows"></div>
         </div>
-        <button type="submit" class="btn primary">Tambahkan ke graf</button>
-      </form>
-      <div class="codehead"><span>Query yang akan dijalankan</span><button type="button" class="btn small" data-copy="fQuery">Salin</button></div>
-      <pre id="fQuery"></pre>
-      <span class="hint" id="saveHint">Halaman ini belum tersambung ke database. Input hanya hidup selama halaman terbuka.</span>
-    </div>
-
-    <div class="panel">
-      <h2>Bakat dan saran AI</h2>
-      <p>Contoh keluaran, dihitung dari aturan sederhana di halaman ini. Di sistem nyata, teksnya ditulis AI platform dari sub-graf yang sama.</p>
-      <h3>Sinyal bakat</h3>
-      <div class="majorRows" id="talents"></div>
-      <span class="hint">Tiap bukti ditimbang menurut sumbernya (lomba 1,0; rapor dan tes 0,8; guru atau pelatih 0,6; orang tua 0,4) dan bobotnya berkurang separuh tiap 3 tahun. Urutan memakai gabungan kemampuan dan kesenangan.</span>
-      <h3>Kesiapan jurusan</h3>
-      <div class="majorRows" id="majorRows"></div>
-      <h3>Saran</h3>
-      <ul class="sg-list" id="suggestions"></ul>
+        <div class="scol wide">
+          <h3>Saran</h3>
+          <ul class="sg-list" id="suggestions"></ul>
+        </div>
+      </div>
     </div>
   </section>
 
-  <section class="work">
+  <section class="view" data-view="input" hidden>
+    <div class="viewhead">
+      <div class="vh-t">
+        <h1>Input berkala</h1>
+        <p class="lead">Setiap input menjadi node Observasi baru dan memperbarui level pada relasi anak. <span id="tryHint">Coba ubah Aljabar ke level 3, atau Renang ke level 4, lalu buka Peta dan saran untuk melihat bakat serta sarannya berubah.</span></p>
+      </div>
+    </div>
+    <div class="panel inputgrid">
+      <div class="icol">
+        <form id="f" autocomplete="off">
+          <div class="row">
+            <div class="fld">
+              <label for="fSrc">Sumber</label>
+              <select id="fSrc">
+                <option value="Rapor">Rapor sekolah</option>
+                <option value="Catatan guru">Catatan guru</option>
+                <option value="Pengamatan">Pengamatan orang tua</option>
+                <option value="Tes atau lomba">Tes atau lomba</option>
+              </select>
+            </div>
+            <div class="fld">
+              <label for="fSubject">Tentang</label>
+              <select id="fSubject"></select>
+            </div>
+          </div>
+          <fieldset>
+            <legend>Level</legend>
+            <div class="seg">
+              <input type="radio" name="lv" id="lv1" value="1"><label for="lv1">1</label>
+              <input type="radio" name="lv" id="lv2" value="2"><label for="lv2">2</label>
+              <input type="radio" name="lv" id="lv3" value="3" checked><label for="lv3">3</label>
+              <input type="radio" name="lv" id="lv4" value="4"><label for="lv4">4</label>
+            </div>
+            <span class="hint" id="lvHint"></span>
+          </fieldset>
+          <fieldset>
+            <legend>Kesenangan anak (opsional)</legend>
+            <div class="seg seg5">
+              <input type="radio" name="en" id="en0" value="0" checked><label for="en0">–</label>
+              <input type="radio" name="en" id="en1" value="1"><label for="en1">1</label>
+              <input type="radio" name="en" id="en2" value="2"><label for="en2">2</label>
+              <input type="radio" name="en" id="en3" value="3"><label for="en3">3</label>
+              <input type="radio" name="en" id="en4" value="4"><label for="en4">4</label>
+            </div>
+            <span class="hint">Seberapa anak menikmatinya, dicatat terpisah dari kemampuannya.</span>
+          </fieldset>
+          <div class="fld">
+            <label for="fNote">Catatan (opsional)</label>
+            <input type="text" id="fNote" maxlength="120" placeholder="mis. sudah lancar persamaan linear">
+          </div>
+          <button type="submit" class="btn primary">Tambahkan ke graf</button>
+        </form>
+      </div>
+      <div class="icol">
+        <div class="codehead"><span>Query yang akan dijalankan</span><button type="button" class="btn small" data-copy="fQuery">Salin</button></div>
+        <pre id="fQuery"></pre>
+        <span class="hint" id="saveHint">Halaman ini belum tersambung ke database. Input hanya hidup selama halaman terbuka.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" data-view="rencana" hidden>
+    <div class="viewhead">
+      <div class="vh-t">
+        <h1>Perencanaan</h1>
+        <p class="lead">Beban mingguan, kalender lomba, dan pembanding sekolah berikutnya.</p>
+      </div>
+    </div>
+  <div class="work plan">
     <div class="panel">
       <h2>Beban mingguan dan biaya</h2>
       <p>Jam dan biaya menempel pada relasi anak ke kegiatan. Saran yang menambah kegiatan memperhitungkan sisa waktunya.</p>
@@ -431,10 +571,11 @@ td code{font-size:12px;white-space:nowrap}
       </table></div>
       <span class="hint">Tiga kandidat contoh.</span>
     </div>
+  </div>
   </section>
 
-  <section class="ref">
-    <h2>Model graf</h2>
+  <section class="view ref" data-view="ref-model" hidden>
+    <h1>Model graf</h1>
     <p>Data master (kurikulum, tahap, kompetensi, sekolah, lomba, olahraga, metode) diisi sekali dan terus Anda tambah, lalu dipakai semua anak. Node Anak, Observasi, dan Saran tumbuh seiring waktu.</p>
     <div class="two">
       <div class="tblwrap"><table>
@@ -512,8 +653,8 @@ td code{font-size:12px;white-space:nowrap}
     </table></div>
   </section>
 
-  <section class="ref">
-    <h2>Lomba: tahapan dan arsip tahunan</h2>
+  <section class="view ref" data-view="ref-lomba" hidden>
+    <h1>Lomba: tahapan dan arsip tahunan</h1>
     <p>Satu lomba punya edisi per tahun, dan tiap edisi punya babak berjenjang. Berkas menempel pada edisinya, jadi saat anak ikut lagi tahun depan, kisi-kisi, soal, juknis, dan catatan tahun sebelumnya langsung jadi bahan belajar.</p>
     <ol class="ladder">
       <li><b>Lokal</b><span>Sekolah, lalu kabupaten atau kota</span></li>
@@ -545,8 +686,8 @@ ORDER BY year DESC, type</pre>
     </div>
   </section>
 
-  <section class="ref">
-    <h2>Dari input ke saran</h2>
+  <section class="view ref" data-view="ref-alur" hidden>
+    <h1>Dari input ke saran</h1>
     <p>Langkah 3 memicu langkah 4 sampai 6 secara otomatis, sehingga saran muncul beberapa detik setelah Anda menyimpan input.</p>
     <ol class="pipe">
       <li><h3>Anda memberi input</h3>Form, foto rapor, atau pesan bebas. Tiap input membawa tanggal dan sumber.</li>
@@ -558,8 +699,8 @@ ORDER BY year DESC, type</pre>
     </ol>
   </section>
 
-  <section class="ref">
-    <h2>Query inti</h2>
+  <section class="view ref" data-view="ref-query" hidden>
+    <h1>Query inti</h1>
     <p>Ditulis dalam Cypher, yang dijalankan ArcadeDB secara native. Semua nama label, relasi, dan properti memakai bahasa Inggris. Nilai seperti id dan tanggal batas dihitung di backend Go dan dikirim sebagai parameter. Query ini belum diuji di ArcadeDB.</p>
     <div class="two">
       <div class="q">
@@ -609,8 +750,8 @@ RETURN sum(r.hoursPerWeek) AS hoursPerWeek,
     </div>
   </section>
 
-  <section class="ref">
-    <h2>Urutan pengerjaan</h2>
+  <section class="view ref" data-view="ref-urutan" hidden>
+    <h1>Urutan pengerjaan</h1>
     <ol class="build">
       <li>Pasang constraint unik pada <code>id</code> untuk setiap label.</li>
       <li>Isi data master: kurikulum, tahap, kompetensi dan prasyaratnya, lalu sekolah, lomba, olahraga, dan metode. Tambah terus seiring waktu.</li>
@@ -620,7 +761,9 @@ RETURN sum(r.hoursPerWeek) AS hoursPerWeek,
       <li>Simpan Saran sebagai node dan catat respons Anda pada properti <code>status</code> (<code>accepted</code> atau <code>rejected</code>), supaya saran berikutnya belajar dari situ.</li>
     </ol>
   </section>
+
 </main>
+</div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"><span id="toastT"></span><button type="button" class="btn small" id="toastB">Lihat di graf</button></div>
 
@@ -647,10 +790,10 @@ const NOWCOL=G?G.nowCol:'D', NOWTXT=G?G.nowText:'Sekarang: kelas 8', NICK=G?G.ch
   if(G){const c=G.child,lv={preschool:'belum sekolah',primary:'SD',junior:'SMP',senior:'SMA',university:'kuliah'}[c.level]||c.level;
     document.title='Talent Atlas · '+NICK;$('#title').textContent='Peta '+NICK;
     $('#who').lastChild.textContent=NICK+', '+lv+(c.grade?' kelas '+c.grade:'')+(G.hidden?' · '+G.hidden+' item belum muat di peta':'');
-    $('#tryHint').textContent='Bakat dan saran di sebelah langsung dihitung ulang.';
+    $('#tryHint').textContent='Bakat dan saran di Peta dan saran langsung dihitung ulang.';
     $('#saveHint').textContent='Setiap input tersimpan di database dan tetap ada saat halaman dibuka lagi.';
     $('#logout').hidden=false;
-    if(G.children.length>1){const sel=$('#childSel');$('#picker').hidden=false;
+    if(G.children.length>1){const sel=$('#childSel');$('#picker').hidden=false;$('#crumb').hidden=true;
       sel.innerHTML=G.children.map(x=>'<option value="'+encodeURIComponent(x.id)+'"'+(x.id===c.id?' selected':'')+'>'+x.nickname.replace(/[<&"]/g,'')+'</option>').join('');
       sel.addEventListener('change',()=>{location.href='/graph?child='+sel.value})}
   }else{$('#navDemo').textContent='Kembali ke data anak';$('#navDemo').href='/graph'}
@@ -1073,7 +1216,8 @@ suggestionEl.addEventListener('pointerover',ev=>{const b=ev.target.closest('.sr'
 suggestionEl.addEventListener('pointerout',ev=>{if(ev.target.closest('.sr')&&hover){hover=null;paint()}});
 suggestionEl.addEventListener('click',ev=>{const b=ev.target.closest('.sr');if(!b)return;
   if(step<6)setStep(6,true);closePop(true);sel=null;hover=null;focusSet=suggestionSet(suggestions[+b.dataset.i]);paint();showGraph()});
-function showGraph(){scroller.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'})}
+function showGraph(){if(view!=='peta'){history.pushState(null,'','#peta');show('peta')}
+  scroller.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'})}
 
 /* ---------- form ---------- */
 const fSubject=$('#fSubject'), fSrc=$('#fSrc'), fNote=$('#fNote'), form=$('#f');
@@ -1154,8 +1298,43 @@ if(G&&G.child.weeklyHourCap)$('#capHours').value=G.child.weeklyHourCap;
 fillAbout();preview();setCaption();
 stepsEl.querySelector('button[data-s="6"]').setAttribute('aria-current','step');
 fit();drawEdges();renderSuggestions();paint();
-if(scroller.scrollWidth>scroller.clientWidth)scroller.scrollLeft=Math.max(0,COL[NOWCOL||'A']*scale-scroller.clientWidth/2);
-if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{drawEdges();paint()});
+
+/* ---------- views: the sidebar shows one section at a time (URL hash) ---------- */
+// No transition on view switches: people jump between them all the time.
+const viewEls=[...document.querySelectorAll('[data-view]')], VIEWS=viewEls.map(v=>v.dataset.view);
+const side=$('#side'), scrim=$('#scrim'), menuBtn=$('#menuBtn'), sideLinks=[...side.querySelectorAll('.sidenav a')];
+let view=null, centered=false;
+function show(v){
+  if(!VIEWS.includes(v))v='peta';
+  if(v===view)return;
+  const first=view===null;view=v;
+  viewEls.forEach(s=>s.hidden=s.dataset.view!==v);
+  sideLinks.forEach(a=>a.dataset.v===v?a.setAttribute('aria-current','page'):a.removeAttribute('aria-current'));
+  $('#topInput').hidden=v==='input';closePop(true);
+  if(!first)window.scrollTo(0,0);
+  if(v==='peta'){
+    // Node sizes are only measurable while the graph is visible, so lay it out again on entry.
+    fit();drawEdges();paint();
+    if(!centered&&scroller.clientWidth){centered=true;
+      if(scroller.scrollWidth>scroller.clientWidth)scroller.scrollLeft=Math.max(0,COL[NOWCOL||'A']*scale-scroller.clientWidth/2)}
+  }
+}
+addEventListener('hashchange',()=>show(location.hash.slice(1)));
+show(location.hash.slice(1));
+
+/* mobile drawer */
+function drawer(open){
+  side.classList.toggle('open',open);scrim.classList.toggle('open',open);
+  menuBtn.setAttribute('aria-expanded',String(open));document.body.classList.toggle('lock',open);
+  if(open)(side.querySelector('[aria-current]')||sideLinks[0]).focus({preventScroll:true});
+}
+menuBtn.addEventListener('click',()=>drawer(!side.classList.contains('open')));
+scrim.addEventListener('click',()=>drawer(false));
+side.addEventListener('click',ev=>{if(ev.target.closest('.sidenav a'))drawer(false)});
+document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&side.classList.contains('open')){drawer(false);menuBtn.focus()}});
+matchMedia('(min-width:1024px)').addEventListener('change',e=>{if(e.matches)drawer(false)});
+
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(view==='peta'){drawEdges();paint()}});
 })();
 </script>
 </body>
