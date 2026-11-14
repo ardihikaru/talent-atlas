@@ -1,6 +1,12 @@
+# Secrets: the repo is public
+.env
+.env.*
+!.env.example
 
-
-artifacts/v1/
-
+# Archives of artifact bundles
 *.zip
 
+# Local tooling
+.claude/settings.local.json
+.idea/
+.vscode/
