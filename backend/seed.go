@@ -127,20 +127,54 @@ func seedStatements() []Statement {
 	return out
 }
 
-// Seed loads the starter catalog once.
-func Seed(ctx context.Context, db *DB) error {
-	done, err := migrationApplied(ctx, db, seedVersion)
-	if err != nil || done {
-		return err
-	}
-	for _, st := range seedStatements() {
-		if _, err := db.Run(ctx, st, ""); err != nil {
-			return err
+// competencyNames gives each generic catalog competency a readable name, per
+// domain, for Fase A to F. They label the nodes of the talent map.
+var competencyNames = map[string][6]string{
+	"numeracy":  {"Berhitung dasar", "Operasi bilangan", "Pecahan & rasio", "Aljabar", "Fungsi & trigonometri", "Kalkulus dasar"},
+	"literacy":  {"Membaca lancar", "Memahami teks", "Menulis paragraf", "Menulis argumen", "Teks akademik", "Menulis ilmiah"},
+	"science":   {"Mengenal alam", "IPAS dasar", "IPAS lanjut", "IPA terpadu", "Fisika, kimia, biologi", "Sains lanjut"},
+	"computing": {"Pola & urutan", "Berpikir komputasional", "Logika komputasi", "Pemrograman", "Algoritma", "Struktur data"},
+}
+
+func competencyNameStatements() []Statement {
+	var out []Statement
+	for _, d := range competencyDomains {
+		for i, s := range nationalStages[:6] {
+			out = append(out, Cypher("MATCH (k:Competency {id: $id}) SET k.name = $name",
+				map[string]any{"id": d.ID + "_" + s.ID, "name": competencyNames[d.ID][i]}))
 		}
 	}
-	if err := markMigration(ctx, db, seedVersion); err != nil {
-		return err
+	return out
+}
+
+// seeds run once each, in order, and are recorded like migrations.
+var seeds = []struct {
+	Version    string
+	Statements func() []Statement
+}{
+	{seedVersion, seedStatements},
+	{"seed-002-competency-names", competencyNameStatements},
+}
+
+// Seed loads every catalog version that has not run yet.
+func Seed(ctx context.Context, db *DB) error {
+	for _, sd := range seeds {
+		done, err := migrationApplied(ctx, db, sd.Version)
+		if err != nil {
+			return err
+		}
+		if done {
+			continue
+		}
+		for _, st := range sd.Statements() {
+			if _, err := db.Run(ctx, st, ""); err != nil {
+				return err
+			}
+		}
+		if err := markMigration(ctx, db, sd.Version); err != nil {
+			return err
+		}
+		log.Printf("catalog seeded: %s", sd.Version)
 	}
-	log.Printf("catalog seeded: %s", seedVersion)
 	return nil
 }

@@ -45,6 +45,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/onboarding/complete", s.auth(s.handleCompleteOnboarding))
 	mux.HandleFunc("GET /api/children", s.auth(s.handleListChildren))
 	mux.HandleFunc("GET /api/children/{id}/summary", s.auth(s.handleChildSummary))
+	mux.HandleFunc("GET /api/children/{id}/graph", s.auth(s.handleChildGraph))
+	mux.HandleFunc("POST /api/children/{id}/observations", s.auth(s.handleAddObservation))
 
 	static, err := fs.Sub(webFiles, "web")
 	if err != nil {
@@ -53,6 +55,11 @@ func (s *Server) Routes() http.Handler {
 	files := http.FileServerFS(static)
 	mux.HandleFunc("GET /onboarding", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFileFS(w, r, static, "onboarding.html")
+	})
+	// The page itself is public; its data comes from auth-only APIs, and it sends
+	// visitors who are not signed in back to the sign-in on /.
+	mux.HandleFunc("GET /graph", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFileFS(w, r, static, "graph.html")
 	})
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		state, err := s.setupState(r.Context())
@@ -311,6 +318,41 @@ RETURN type(r) AS relation, count(x) AS n`,
 		rows = []Row{}
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"relations": rows})
+}
+
+func (s *Server) handleChildGraph(w http.ResponseWriter, r *http.Request) {
+	data, err := LoadGraph(r.Context(), s.DB, userID(r), r.PathValue("id"))
+	if errors.Is(err, errNotFound) {
+		writeError(w, http.StatusNotFound, "child not found")
+		return
+	}
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, BuildGraph(data, s.Now()))
+}
+
+func (s *Server) handleAddObservation(w http.ResponseWriter, r *http.Request) {
+	var in ObservationInput
+	if !readJSON(w, r, &in) {
+		return
+	}
+	if err := in.Validate(); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	id := NewID("observation")
+	rows, err := s.DB.Run(r.Context(), in.Statements(userID(r), r.PathValue("id"), id, s.Now())[0], "")
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	if len(rows) == 0 { // not this user's child, or no such target node: nothing was written
+		writeError(w, http.StatusNotFound, "child or target not found")
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]string{"id": id})
 }
 
 func readJSON(w http.ResponseWriter, r *http.Request, into any) bool {
